@@ -144,7 +144,28 @@ weekly once confirmed working.**
 trigger. Pending: confirm the actual cron (schedule) trigger fires on its
 own, then revert cron back to weekly.
 
+## M8 — More golden rules (done)
+
+**Goal:** an outside assessment (ChatGPT, given a full framework rundown)
+flagged that golden-rule coverage was thin — two rules demonstrate the
+mechanism but aren't yet a real "taste layer." Cheapest gap to close.
+
+Added two rules to `scripts/check_golden_rules.py`:
+- No bare `except:` in domain code — swallows everything including
+  `KeyboardInterrupt`/`SystemExit`, hides real bugs.
+- No `print()` in domain code — should go through the `providers` logger
+  instead, reinforcing the reuse-before-hand-rolling principle.
+
+Verified: baseline clean run, then deliberately introduced both
+violations in `widgets/service.py` in one function, confirmed both
+detected with correct file/line, then reverted.
+
+**Status:** Complete.
+
 ## Backlog (unscheduled, not yet milestones)
 
-(none — all four original practices plus CI/branch-protection hardening
-are now built)
+- Agentic maintenance loop: a scheduled agent that reads doc-gardener /
+  golden-rules findings, investigates, makes a targeted fix, runs the
+  full validation suite, and opens a PR — turning the current
+  flag-and-wait harness into an actually self-correcting one. Flagged as
+  the highest-value next step by an external assessment.
