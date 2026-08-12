@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+ruff
+import-linter
+pytest
+pre-commit
+pip-tools
