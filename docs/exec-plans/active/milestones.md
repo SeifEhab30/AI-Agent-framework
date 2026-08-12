@@ -87,7 +87,7 @@ this, CI could go red on `master` and nothing would stop it.
 
 **Status:** Complete.
 
-## M6 — Combined entrypoint (in progress)
+## M6 — Combined entrypoint (done)
 
 **Goal:** run the product as one service instead of three independent
 demo apps, without changing any domain's internal structure.
@@ -105,8 +105,8 @@ domain folders, same as `runtime.py`/`ui.py` do within a domain.
   `app.openapi()['paths']` that all six routes are mounted
 - Each domain remains independently runnable via its own `<domain>.ui:app`
 
-**Status:** Built and verified locally; pending branch + PR to merge into
-`master`.
+**Status:** Complete. Merged via PR, CI green, branch protection exercised
+end-to-end.
 
 ## Backlog (unscheduled, not yet milestones)
 
