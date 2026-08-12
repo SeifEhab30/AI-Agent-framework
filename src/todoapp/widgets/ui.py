@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import APIRouter, FastAPI, HTTPException
 
@@ -20,7 +20,7 @@ def build_router(service: WidgetService, emit_event: Callable[..., None]) -> API
         try:
             widget = service.create_widget(data)
         except ValidationError as e:
-            raise HTTPException(status_code=422, detail=str(e))
+            raise HTTPException(status_code=422, detail=str(e)) from e
         emit_event("widget_created", widget_id=widget.id)
         return widget
 
@@ -29,7 +29,7 @@ def build_router(service: WidgetService, emit_event: Callable[..., None]) -> API
         try:
             return service.toggle_done(widget_id)
         except NotFoundError as e:
-            raise HTTPException(status_code=404, detail=str(e))
+            raise HTTPException(status_code=404, detail=str(e)) from e
 
     return router
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from todoapp.platform.errors import NotFoundError, ValidationError
 from todoapp.platform.ids import new_id
@@ -14,9 +14,7 @@ class WidgetService:
         title = data.title.strip()
         if not title:
             raise ValidationError("title must not be empty")
-        widget = Widget(
-            id=new_id(), title=title, done=False, created_at=datetime.now(timezone.utc)
-        )
+        widget = Widget(id=new_id(), title=title, done=False, created_at=datetime.now(UTC))
         self._repo.add(widget)
         return widget
 

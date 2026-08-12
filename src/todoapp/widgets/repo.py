@@ -40,9 +40,7 @@ class WidgetRepo:
         return self._to_widget(row) if row else None
 
     def set_done(self, widget_id: str, done: bool) -> None:
-        self._conn.execute(
-            "UPDATE widgets SET done = ? WHERE id = ?", (int(done), widget_id)
-        )
+        self._conn.execute("UPDATE widgets SET done = ? WHERE id = ?", (int(done), widget_id))
         self._conn.commit()
 
     @staticmethod

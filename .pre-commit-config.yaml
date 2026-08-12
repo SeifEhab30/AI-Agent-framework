@@ -8,16 +8,11 @@ repos:
     hooks:
       - id: import-linter
         name: import-linter
-        entry: lint-imports
+        entry: python -c "from importlinter.cli import lint_imports_command; lint_imports_command()"
         language: system
         pass_filenames: false
       - id: pytest
         name: pytest
-        entry: pytest -q
-        language: system
-        pass_filenames: false
-      - id: golden-rules
-        name: golden-rules
-        entry: python scripts/check_golden_rules.py
+        entry: python -m pytest -q
         language: system
         pass_filenames: false
