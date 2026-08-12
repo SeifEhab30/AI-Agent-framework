@@ -16,3 +16,8 @@ repos:
         entry: python -m pytest -q
         language: system
         pass_filenames: false
+      - id: golden-rules
+        name: golden-rules
+        entry: python scripts/check_golden_rules.py
+        language: system
+        pass_filenames: false
