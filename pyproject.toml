@@ -48,3 +48,36 @@ source_modules = [
 ]
 forbidden_modules = ["todoapp.providers"]
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Notes domain layering"
+type = "layers"
+layers = [
+    "todoapp.notes.ui",
+    "todoapp.notes.runtime",
+    "todoapp.notes.service",
+    "todoapp.notes.repo",
+    "todoapp.notes.config",
+    "todoapp.notes.types",
+]
+
+[[tool.importlinter.contracts]]
+name = "Only runtime may import providers (notes)"
+type = "forbidden"
+source_modules = [
+    "todoapp.notes.types",
+    "todoapp.notes.config",
+    "todoapp.notes.repo",
+    "todoapp.notes.service",
+    "todoapp.notes.ui",
+]
+forbidden_modules = ["todoapp.providers"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Domains do not import each other"
+type = "independence"
+modules = [
+    "todoapp.widgets",
+    "todoapp.notes",
+]

@@ -3,9 +3,8 @@
 Verified: 2026-08-12
 
 Tracks progress on the Codex-style workflow scaffold, one milestone at a
-time. Update status and add the next milestone as work lands. Move a
-milestone to `docs/exec-plans/completed/` once it's done and no longer
-needs to stay "active."
+time. This is a single running log, not one file per milestone — update
+status and add the next milestone in place as work lands.
 
 ## M1 — Scaffold + reference domain (done)
 
@@ -18,25 +17,32 @@ needs to stay "active."
 
 **Status:** Complete.
 
-## M2 — Second domain (in progress)
+## M2 — Second domain: notes (done)
 
 **Goal:** prove the layering/providers convention actually generalizes
 past one domain, not just that it worked once.
 
-Add a second domain (name TBD) that copies the `widgets/` folder
-structure (`types.py` → `ui.py`) exactly, and:
+Added a `notes` domain (title + body, deliberately unrelated to widgets —
+no cross-domain imports) that copies the `widgets/` folder structure
+(`types.py` → `ui.py`) exactly:
 - reuses `providers/` and `platform/` without modification
-- passes the same import-linter layers + forbidden contracts, extended to
-  cover the new domain
-- gets its own `docs/product-specs/` entry and a design-doc if any
-  deviation from the widgets pattern is needed
+- has its own import-linter layers + forbidden contracts, plus a new
+  `independence` contract ensuring `widgets` and `notes` never import
+  each other
+- has its own `docs/product-specs/notes.md`
+- manually verified end-to-end (create/list/update) via its own Swagger UI
 
-If anything about `providers`/`platform` turns out to be widgets-specific,
-that's the signal to fix here — before a third domain compounds the issue.
+Widgets and notes run as two independent FastAPI apps on separate ports
+(`todoapp.widgets.ui:app`, `todoapp.notes.ui:app`) rather than one combined
+app — deliberate for now, since the focus is the framework, not the
+product. Combining them into one entrypoint is deferred, not forgotten;
+see backlog.
 
-**Status:** Not started.
+**Status:** Complete. Pattern confirmed to generalize with zero
+modification to `providers/`/`platform/`.
 
 ## Backlog (unscheduled, not yet milestones)
 
 - CI (currently pre-commit-only; `--no-verify` can still bypass checks)
 - Doc-gardener auto-fix or PR automation (currently report-only)
+- Combined entrypoint mounting both domains under one app/port
