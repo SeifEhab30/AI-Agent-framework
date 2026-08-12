@@ -16,4 +16,4 @@ No auth, no multi-user separation, no folders/tags, no relation to the
 layering/providers pattern holds across multiple independent domains — see
 [docs/exec-plans/active/milestones.md](../exec-plans/active/milestones.md) M3.
 
-See also [old bookmarks prototype](src/todoapp/bookmarks/prototype_old.py) for early exploration.
+See also old bookmarks prototype for early exploration.
