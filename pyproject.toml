@@ -75,9 +75,35 @@ forbidden_modules = ["todoapp.providers"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
+name = "Bookmarks domain layering"
+type = "layers"
+layers = [
+    "todoapp.bookmarks.ui",
+    "todoapp.bookmarks.runtime",
+    "todoapp.bookmarks.service",
+    "todoapp.bookmarks.repo",
+    "todoapp.bookmarks.config",
+    "todoapp.bookmarks.types",
+]
+
+[[tool.importlinter.contracts]]
+name = "Only runtime may import providers (bookmarks)"
+type = "forbidden"
+source_modules = [
+    "todoapp.bookmarks.types",
+    "todoapp.bookmarks.config",
+    "todoapp.bookmarks.repo",
+    "todoapp.bookmarks.service",
+    "todoapp.bookmarks.ui",
+]
+forbidden_modules = ["todoapp.providers"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
 name = "Domains do not import each other"
 type = "independence"
 modules = [
     "todoapp.widgets",
     "todoapp.notes",
+    "todoapp.bookmarks",
 ]

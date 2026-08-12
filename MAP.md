@@ -50,9 +50,11 @@ src/todoapp/
 
 ## Current domains
 
-| Domain  | Spec                                                            |
-|---------|------------------------------------------------------------------|
-| widgets | [docs/product-specs/widgets-todo.md](docs/product-specs/widgets-todo.md) |
+| Domain    | Spec                                                              |
+|-----------|--------------------------------------------------------------------|
+| widgets   | [docs/product-specs/widgets-todo.md](docs/product-specs/widgets-todo.md) |
+| notes     | [docs/product-specs/notes.md](docs/product-specs/notes.md)         |
+| bookmarks | [docs/product-specs/bookmarks.md](docs/product-specs/bookmarks.md) |
 
 ## Progress
 

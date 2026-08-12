@@ -41,8 +41,24 @@ see backlog.
 **Status:** Complete. Pattern confirmed to generalize with zero
 modification to `providers/`/`platform/`.
 
+## M3 — Third domain: bookmarks (done)
+
+**Goal:** three domains is the real test of "generalizes" — two could
+still be coincidence.
+
+Added a `bookmarks` domain (url + title, independent of widgets and
+notes), same six-layer structure:
+- reuses `providers/` and `platform/` without modification
+- own layers + forbidden contracts; `independence` contract extended to
+  cover all three domains pairwise
+- own `docs/product-specs/bookmarks.md`
+- verified: ruff, import-linter (7 contracts kept), pytest (12 passed),
+  golden-rules all clean
+
+**Status:** Complete.
+
 ## Backlog (unscheduled, not yet milestones)
 
 - CI (currently pre-commit-only; `--no-verify` can still bypass checks)
 - Doc-gardener auto-fix or PR automation (currently report-only)
-- Combined entrypoint mounting both domains under one app/port
+- Combined entrypoint mounting all domains under one app/port
