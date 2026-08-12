@@ -1,0 +1,54 @@
+name: Doc Gardener
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  garden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Run doc gardener with auto-fix
+        run: python scripts/doc_gardener.py --fix
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create branch and commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          BRANCH="doc-gardener/report-$(date +%Y%m%d-%H%M%S)"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          git config user.name "doc-gardener-bot"
+          git config user.email "actions@github.com"
+          git checkout -b "$BRANCH"
+          git add docs/
+          git commit -m "doc-gardener: automated report + link fixes"
+          git push origin "$BRANCH"
+      - name: Open PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -s -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls" \
+            -d "{\"title\":\"doc-gardener: automated report + fixes\",\"head\":\"$BRANCH\",\"base\":\"master\",\"body\":\"Automated weekly doc-gardener run. Review any auto-fixed broken links and remaining flagged staleness in docs/quality-score/report.md before merging.\"}"

@@ -48,7 +48,9 @@ useful for isolated testing.
 - `ruff` — lint + format. Run: `ruff check .`
 - `import-linter` — enforces the layering contract. Run: `lint-imports`
 - `pytest` — tests. Run: `pytest -q`
-- `scripts/doc_gardener.py` — flags stale docs. Run: `python scripts/doc_gardener.py`
+- `scripts/doc_gardener.py` — flags stale docs; `--fix` unlinks broken
+  markdown links only. Runs weekly via
+  `.github/workflows/doc-gardener.yml`, opening a PR — nothing auto-merges.
 - `scripts/check_golden_rules.py` — golden-principle checks not covered by ruff.
   Run: `python scripts/check_golden_rules.py`
 - CI (`.github/workflows/ci.yml`) — runs the same checks as pre-commit on
