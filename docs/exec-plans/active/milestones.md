@@ -108,7 +108,7 @@ domain folders, same as `runtime.py`/`ui.py` do within a domain.
 **Status:** Complete. Merged via PR, CI green, branch protection exercised
 end-to-end.
 
-## M7 — Doc-gardener automation (in progress)
+## M7 — Doc-gardener automation (done, cron timing unverified)
 
 **Goal:** move doc-gardener from "run it by hand and hope someone reads
 the output" to actually catching drift on its own — without letting an
@@ -133,16 +133,26 @@ it's flagged without `--fix`, confirmed `--fix` unlinks it and only it
 (surrounding prose untouched), confirmed the report file updates
 correctly, then removed the test link.
 
-Merged and live-tested: added a deliberately broken doc link on `master`,
-confirmed the manual `workflow_dispatch` run found it and created a
-`doc-gardener/report-*` branch with the fix. Cron temporarily set to
-daily 12:00 UTC (was weekly, Monday 06:00 UTC) to verify the *schedule*
-trigger itself fires without waiting a week — **must be reverted to
-weekly once confirmed working.**
+Merged and live-tested (manual trigger): added a deliberately broken doc
+link on `master`, confirmed the manual `workflow_dispatch` run found it
+and created a `doc-gardener/report-*` branch with the fix, opened a real
+PR (after discovering and fixing a repo setting gap — "Allow GitHub
+Actions to create and approve pull requests" was off by default).
 
-**Status:** Core automation confirmed working end-to-end via manual
-trigger. Pending: confirm the actual cron (schedule) trigger fires on its
-own, then revert cron back to weekly.
+Attempted to also verify the *schedule* (cron) trigger itself fires
+on its own within a tight window (first daily at 12:00 UTC, then moved to
+11:05 UTC to expedite) — it did not fire within ~15 minutes of either
+target time. GitHub does not guarantee scheduled workflow punctuality
+(documented best-effort behavior, can silently skip a run during high
+load), and there's no way to force or debug this from outside GitHub's
+own infrastructure. Cron reverted to weekly: `0 9 * * 1` (Monday 09:00
+UTC = Monday 12:00 GMT+3).
+
+**Status:** Core automation (detect → auto-fix → branch → PR) confirmed
+working end-to-end via manual trigger — this is the part that matters.
+The cron *schedule* trigger itself remains unverified as firing
+correctly; next real signal is whether the Monday 12:00 GMT+3 run
+actually happens on its own.
 
 ## M8 — More golden rules (done)
 
