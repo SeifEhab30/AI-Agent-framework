@@ -79,6 +79,11 @@ this, CI could go red on `master` and nothing would stop it.
 
 - Branch protection rule added on `master` in GitHub repo settings,
   requiring the `checks` CI job to pass before merging
+- "Include administrators" enabled — confirmed by a rejected direct push
+  (`GH006: Protected branch update failed`, no passing check for that
+  commit) — the rule now blocks admins too, not just external PRs
+- Going forward: direct `git push` to `master` no longer works. Changes
+  need a feature branch + PR, CI runs there, merge once green.
 
 **Status:** Complete.
 
