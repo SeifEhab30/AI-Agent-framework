@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+      - name: ruff
+        run: ruff check .
+      - name: ruff format check
+        run: ruff format --check .
+      - name: import-linter
+        run: lint-imports
+      - name: pytest
+        run: pytest -q
+      - name: golden rules
+        run: python scripts/check_golden_rules.py

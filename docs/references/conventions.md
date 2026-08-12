@@ -13,3 +13,7 @@ Verified: 2026-08-12
 - Providers isolation (only `runtime.py` may import `providers/`) is enforced
   by the import-linter `forbidden` contract only — not duplicated as a
   separate check in `scripts/check_golden_rules.py`.
+- CI (`.github/workflows/ci.yml`) runs the same checks as pre-commit
+  (ruff, ruff format, import-linter, pytest, golden-rules). Pre-commit is
+  the fast local gate; CI is the one that can't be skipped with
+  `--no-verify`.

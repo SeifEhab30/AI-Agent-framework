@@ -47,6 +47,8 @@ src/todoapp/
 - `scripts/doc_gardener.py` — flags stale docs. Run: `python scripts/doc_gardener.py`
 - `scripts/check_golden_rules.py` — golden-principle checks not covered by ruff.
   Run: `python scripts/check_golden_rules.py`
+- CI (`.github/workflows/ci.yml`) — runs the same checks as pre-commit on
+  every push/PR; catches anything a local `--no-verify` skipped.
 
 ## Current domains
 

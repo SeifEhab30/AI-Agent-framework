@@ -57,8 +57,22 @@ notes), same six-layer structure:
 
 **Status:** Complete.
 
+## M4 — CI (in progress)
+
+**Goal:** close the `--no-verify` gap — pre-commit only enforces rules on
+machines where hooks are installed and not bypassed; CI enforces them
+regardless.
+
+- Added `.github/workflows/ci.yml`: runs ruff, ruff format check,
+  import-linter, pytest, golden-rules on every push/PR
+- Requires pushing this repo to GitHub for the workflow to actually run
+  (previously local-only) — remote setup in progress
+
+**Status:** Workflow file added; pending GitHub remote + first push to
+confirm it actually runs.
+
 ## Backlog (unscheduled, not yet milestones)
 
-- CI (currently pre-commit-only; `--no-verify` can still bypass checks)
 - Doc-gardener auto-fix or PR automation (currently report-only)
 - Combined entrypoint mounting all domains under one app/port
+- Branch protection requiring CI to pass before merge (once collaborators exist)
