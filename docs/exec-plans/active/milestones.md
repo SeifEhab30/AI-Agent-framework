@@ -175,10 +175,48 @@ detected with correct file/line, then reverted.
 
 **Status:** Complete.
 
+## M9 — Agentic maintenance loop (done)
+
+**Goal:** close the biggest gap flagged by an external assessment: the
+harness could only flag issues, not act on them. Build a scheduled agent
+that reads doc-gardener/golden-rules findings, investigates, makes a
+targeted fix, validates, and opens a PR — an actual self-correcting loop,
+not just more static tooling.
+
+Built as a Claude Code cloud routine (`RemoteTrigger`/`schedule`), weekly
+Monday 10:00 UTC (13:00 GMT+3, ~1hr after the doc-gardener GitHub Actions
+cron), model claude-sonnet-5, scoped to Bash/Read/Write/Edit/Glob/Grep
+against the repo. Prompt instructs it to: read `MAP.md` and
+`docs/references/conventions.md` for house rules, run
+`doc_gardener.py`/`check_golden_rules.py`, fix only what those two flag
+(noting anything else it notices without touching it), run the full
+validation suite, then commit/push/PR — never merge itself, never push
+directly to `master`.
+
+Setup required making the repo public — Code routines' repository picker
+only lists repos the routine's GitHub integration can see, and that did
+not include this private repo despite GitHub being generally connected;
+no working per-repo write-access grant was found for private repos after
+checking connectors, installed GitHub Apps, and authorized GitHub Apps.
+
+First manual run got through investigation, fix, and full validation
+correctly, but both `git push` and the routine's GitHub MCP tool returned
+`403 Resource not accessible by integration` — a real write-access gap
+with no user-fixable setting found. The agent handled this well: it
+reported the blocker honestly instead of working around it. A second
+manual run shortly after succeeded end-to-end — found the same
+deliberately-left broken link, fixed it, validated, pushed
+`agentic-maintenance/2026-08-12`, and opened a real PR, merged by a
+human. Cause of the first run's failure vs. the second run's success is
+unconfirmed (possibly permission propagation delay) — worth treating as
+a known reliability caveat, not a fully resolved issue.
+
+**Status:** Complete. Full loop (investigate → fix → validate → PR)
+confirmed working end-to-end via manual trigger and a real merged PR.
+Weekly schedule trigger (Monday 13:00 GMT+3) itself remains unverified,
+same caveat as M7's cron.
+
 ## Backlog (unscheduled, not yet milestones)
 
-- Agentic maintenance loop: a scheduled agent that reads doc-gardener /
-  golden-rules findings, investigates, makes a targeted fix, runs the
-  full validation suite, and opens a PR — turning the current
-  flag-and-wait harness into an actually self-correcting one. Flagged as
-  the highest-value next step by an external assessment.
+(none — all four original practices, CI/branch-protection hardening, and
+the agentic maintenance loop are now built and verified)
