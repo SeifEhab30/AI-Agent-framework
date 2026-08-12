@@ -222,6 +222,38 @@ confirmed working end-to-end via manual trigger and a real merged PR.
 Weekly schedule trigger (Monday 13:00 GMT+3) itself remains unverified,
 same caveat as M7's cron.
 
+## M10 — Behavioral bug detection + scope guard (in progress)
+
+**Goal:** M9 proved the loop can act on doc-gardener/golden-rules
+findings — pattern matches, not judgment. An external assessment pointed
+out this doesn't prove the agent can find a real logic bug nothing else
+catches. Test that, while adding a mechanical backstop for the wider
+scope this requires (per the same assessment's Gap #5: nothing currently
+stops the agent from touching files outside a finding's scope except its
+own instruction-following).
+
+**The bug:** `widgets/service.py` `toggle_done` changed from
+`self._repo.set_done(widget_id, not widget.done)` to
+`self._repo.set_done(widget_id, True)` — always marks done, never
+un-marks. Confirmed this passes ruff, pytest (existing `test_toggle_done`
+only checks `False → True`, never toggles twice), and
+`check_golden_rules.py` — genuinely invisible to every current automated
+check, only findable by comparing behavior against
+`docs/product-specs/widgets-todo.md` ("Toggle a widget's done state").
+
+**The scope widening:** routine prompt updated to also do a bounded
+code-health review — read each domain's product-spec, compare against
+its `service.py`, and if a discrepancy is found, write a test proving it
+and fix the implementation, in addition to the existing
+doc-gardener/golden-rules handling. Explicit file-scope stated in the
+prompt (only `service.py`/`test_service.py` per domain, plus the
+existing doc-gardener/golden-rules targets) — anything needed outside
+that scope must be reported, not touched. Diff scope currently checked
+manually before merge, pending a mechanical version (see backlog).
+
+**Status:** Bug merged to master. Routine prompt update and manual
+trigger pending.
+
 ## Backlog (unscheduled, not yet milestones)
 
 (none — all four original practices, CI/branch-protection hardening, and
