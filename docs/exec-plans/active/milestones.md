@@ -72,8 +72,17 @@ regardless.
 
 **Status:** Complete. CI is live and enforcing on every push.
 
+## M5 — Branch protection (done)
+
+**Goal:** make the CI gate binding, not just informational — without
+this, CI could go red on `master` and nothing would stop it.
+
+- Branch protection rule added on `master` in GitHub repo settings,
+  requiring the `checks` CI job to pass before merging
+
+**Status:** Complete.
+
 ## Backlog (unscheduled, not yet milestones)
 
 - Doc-gardener auto-fix or PR automation (currently report-only)
 - Combined entrypoint mounting all domains under one app/port
-- Branch protection requiring CI to pass before merge (once collaborators exist)
