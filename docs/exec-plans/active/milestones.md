@@ -148,14 +148,20 @@ load), and there's no way to force or debug this from outside GitHub's
 own infrastructure. Cron reverted to weekly: `0 9 * * 1` (Monday 09:00
 UTC = Monday 12:00 GMT+3).
 
-A deliberately broken link is left in `docs/product-specs/bookmarks.md`
-on purpose, so the Monday run has something real to catch and fix.
+The bookmarks.md broken link mentioned above was already caught and
+fixed by M9's agentic-loop run before the Monday cron got a chance to. A
+fresh deliberately broken link is now left in
+`docs/product-specs/notes.md` instead, so both the Monday 09:00 UTC
+doc-gardener cron and the Monday 10:00 UTC agentic-loop cron have
+something real to catch on their first unattended (non-manually-
+triggered) runs.
 
 **Status:** Core automation (detect → auto-fix → branch → PR) confirmed
 working end-to-end via manual trigger — this is the part that matters.
 The cron *schedule* trigger itself remains unverified as firing
-correctly; next real signal is whether the Monday 12:00 GMT+3 run
-actually happens on its own and opens a PR fixing the link above.
+correctly on its own for either workflow; next real signal is whether
+next Monday's runs happen unattended and both produce PRs fixing the
+notes.md link.
 
 ## M8 — More golden rules (done)
 
