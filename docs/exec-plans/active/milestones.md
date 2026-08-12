@@ -87,7 +87,27 @@ this, CI could go red on `master` and nothing would stop it.
 
 **Status:** Complete.
 
+## M6 — Combined entrypoint (in progress)
+
+**Goal:** run the product as one service instead of three independent
+demo apps, without changing any domain's internal structure.
+
+Added `src/todoapp/app.py`: imports each domain's `build_runtime()` and
+`build_router()`, mounts all three routers under one `FastAPI()` instance.
+No domain code was touched — this is pure composition sitting outside the
+domain folders, same as `runtime.py`/`ui.py` do within a domain.
+
+- Verified: import-linter still shows 7/7 contracts kept (new module
+  doesn't need its own contract — it's not a domain and doesn't get
+  imported by one)
+- Verified live: created a widget, a note, and a bookmark all through the
+  same running instance (`uvicorn todoapp.app:app`), confirmed via
+  `app.openapi()['paths']` that all six routes are mounted
+- Each domain remains independently runnable via its own `<domain>.ui:app`
+
+**Status:** Built and verified locally; pending branch + PR to merge into
+`master`.
+
 ## Backlog (unscheduled, not yet milestones)
 
 - Doc-gardener auto-fix or PR automation (currently report-only)
-- Combined entrypoint mounting all domains under one app/port

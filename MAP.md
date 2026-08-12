@@ -34,10 +34,14 @@ below — do not expand this file with prose. Keep it short.
 
 ```
 src/todoapp/
+├── app.py       # combined entrypoint — mounts every domain's router under one app
 ├── providers/   # cross-cutting: DI container, auth, logging, telemetry
 ├── platform/    # shared utilities (ids, errors) — reuse before hand-rolling
 └── <domain>/    # types.py, config.py, repo.py, service.py, runtime.py, ui.py
 ```
+
+Each domain is also independently runnable via its own `<domain>.ui:app`,
+useful for isolated testing.
 
 ## Tooling index
 
