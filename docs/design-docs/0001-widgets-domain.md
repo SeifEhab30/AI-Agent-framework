@@ -19,3 +19,5 @@ for behavior.
 
 ## Consequences
 Future domains copy this folder's structure rather than inventing their own.
+
+See also [old notes](docs/design-docs/deleted-scratch-notes.md) for early exploration.
