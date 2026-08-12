@@ -10,3 +10,6 @@ Verified: 2026-08-12
   updated whenever the doc is checked against the code it describes.
 - Secrets never get committed. Document required env vars in `.env.example`,
   never in a real `.env`.
+- Providers isolation (only `runtime.py` may import `providers/`) is enforced
+  by the import-linter `forbidden` contract only — not duplicated as a
+  separate check in `scripts/check_golden_rules.py`.
