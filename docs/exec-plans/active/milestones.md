@@ -148,11 +148,14 @@ load), and there's no way to force or debug this from outside GitHub's
 own infrastructure. Cron reverted to weekly: `0 9 * * 1` (Monday 09:00
 UTC = Monday 12:00 GMT+3).
 
+A deliberately broken link is left in `docs/product-specs/bookmarks.md`
+on purpose, so the Monday run has something real to catch and fix.
+
 **Status:** Core automation (detect → auto-fix → branch → PR) confirmed
 working end-to-end via manual trigger — this is the part that matters.
 The cron *schedule* trigger itself remains unverified as firing
 correctly; next real signal is whether the Monday 12:00 GMT+3 run
-actually happens on its own.
+actually happens on its own and opens a PR fixing the link above.
 
 ## M8 — More golden rules (done)
 
