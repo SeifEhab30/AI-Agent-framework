@@ -145,13 +145,13 @@ on its own within a tight window (first daily at 12:00 UTC, then moved to
 target time. GitHub does not guarantee scheduled workflow punctuality
 (documented best-effort behavior, can silently skip a run during high
 load), and there's no way to force or debug this from outside GitHub's
-own infrastructure. Cron reverted to weekly: `0 21 * * 0` (Sunday 21:00
-UTC = Monday 00:00 GMT+3).
+own infrastructure. Cron reverted to weekly: `0 9 * * 1` (Monday 09:00
+UTC = Monday 12:00 GMT+3).
 
 **Status:** Core automation (detect → auto-fix → branch → PR) confirmed
 working end-to-end via manual trigger — this is the part that matters.
 The cron *schedule* trigger itself remains unverified as firing
-correctly; next real signal is whether the Monday 00:00 GMT+3 run
+correctly; next real signal is whether the Monday 12:00 GMT+3 run
 actually happens on its own.
 
 ## M8 — More golden rules (done)
