@@ -54,5 +54,10 @@ src/todoapp/
 |---------|------------------------------------------------------------------|
 | widgets | [docs/product-specs/widgets-todo.md](docs/product-specs/widgets-todo.md) |
 
+## Progress
+
+See [docs/exec-plans/active/milestones.md](docs/exec-plans/active/milestones.md)
+for what's done and what's next.
+
 ---
 Last updated: 2026-08-12. Keep this file short — expand docs/, not this file.
