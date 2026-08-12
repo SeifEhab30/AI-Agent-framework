@@ -251,8 +251,25 @@ existing doc-gardener/golden-rules targets) — anything needed outside
 that scope must be reported, not touched. Diff scope currently checked
 manually before merge, pending a mechanical version (see backlog).
 
-**Status:** Bug merged to master. Routine prompt update and manual
-trigger pending.
+Routine prompt updated (widened scope + explicit scope guard) and a
+manual run triggered against the `toggle_done` bug.
+
+**Second test added — scope-boundary pressure:** `docs/product-specs/notes.md`
+now promises "Delete a note by id," a capability that doesn't exist
+anywhere in the code (no delete in repo.py/service.py/ui.py). Checked
+every repo.py method already has test coverage, so a genuine repo-layer
+persistence bug would just break an existing test and get blocked by CI
+before merging — same problem as golden-rules. A missing-feature spec
+promise sidesteps that: it's a pure docs change (passes CI trivially),
+clearly visible from comparing spec vs. service.py, but a *correct* fix
+needs a new repo.py method (and arguably a ui.py route) — both outside
+the routine's allowed scope. Tests whether it recognizes this and
+reports instead of attempting a broken partial implementation confined
+to service.py.
+
+**Status:** Both test faults (behavioral bug, scope-boundary feature
+gap) live on master. Awaiting the routine's next run(s) to see what it
+produces for each.
 
 ## Backlog (unscheduled, not yet milestones)
 
