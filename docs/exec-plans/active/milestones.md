@@ -133,9 +133,16 @@ it's flagged without `--fix`, confirmed `--fix` unlinks it and only it
 (surrounding prose untouched), confirmed the report file updates
 correctly, then removed the test link.
 
-**Status:** Built and verified locally; pending branch + PR to merge, and
-a manual `workflow_dispatch` run on GitHub to confirm the PR-opening step
-actually works (the cron trigger itself can't be tested until it's due).
+Merged and live-tested: added a deliberately broken doc link on `master`,
+confirmed the manual `workflow_dispatch` run found it and created a
+`doc-gardener/report-*` branch with the fix. Cron temporarily set to
+daily 12:00 UTC (was weekly, Monday 06:00 UTC) to verify the *schedule*
+trigger itself fires without waiting a week — **must be reverted to
+weekly once confirmed working.**
+
+**Status:** Core automation confirmed working end-to-end via manual
+trigger. Pending: confirm the actual cron (schedule) trigger fires on its
+own, then revert cron back to weekly.
 
 ## Backlog (unscheduled, not yet milestones)
 

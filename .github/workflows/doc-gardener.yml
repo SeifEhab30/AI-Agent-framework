@@ -2,7 +2,7 @@ name: Doc Gardener
 
 on:
   schedule:
-    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+    - cron: "0 12 * * *" # TEMP: daily 12:00 UTC (3pm GMT+3) for live-testing the schedule trigger
   workflow_dispatch:
 
 permissions:
