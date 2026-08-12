@@ -43,6 +43,10 @@ src/todoapp/
 Each domain is also independently runnable via its own `<domain>.ui:app`,
 useful for isolated testing.
 
+`frontend/` — separate React + Vite app, calls the backend API at
+`localhost:8000`. Not part of the Python layering system; its own
+top-level concern. See README.md for dev setup.
+
 ## Tooling index
 
 - `ruff` — lint + format. Run: `ruff check .`
