@@ -10,5 +10,5 @@ Start here: [MAP.md](MAP.md)
 
 ```bash
 pip install -r requirements.txt
-uvicorn todoapp.widgets.runtime:app --reload
+uvicorn todoapp.widgets.ui:app --reload
 ```

@@ -20,3 +20,31 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.importlinter]
+root_package = "todoapp"
+
+[[tool.importlinter.contracts]]
+name = "Widgets domain layering"
+type = "layers"
+layers = [
+    "todoapp.widgets.ui",
+    "todoapp.widgets.runtime",
+    "todoapp.widgets.service",
+    "todoapp.widgets.repo",
+    "todoapp.widgets.config",
+    "todoapp.widgets.types",
+]
+
+[[tool.importlinter.contracts]]
+name = "Only runtime may import providers"
+type = "forbidden"
+source_modules = [
+    "todoapp.widgets.types",
+    "todoapp.widgets.config",
+    "todoapp.widgets.repo",
+    "todoapp.widgets.service",
+    "todoapp.widgets.ui",
+]
+forbidden_modules = ["todoapp.providers"]
+allow_indirect_imports = true
