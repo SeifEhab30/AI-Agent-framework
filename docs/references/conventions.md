@@ -23,3 +23,7 @@ Verified: 2026-08-12
   link that points at a deleted file. It never edits prose, never bumps a
   `Verified:` date, and never touches anything else — those always need a
   human to actually read the doc and decide.
+- No bare `except:` in domain code (`src/todoapp/**`) — always catch a
+  specific exception. Enforced by `scripts/check_golden_rules.py`.
+- No `print()` in domain code — use the `providers` logger instead.
+  Enforced by `scripts/check_golden_rules.py`.
