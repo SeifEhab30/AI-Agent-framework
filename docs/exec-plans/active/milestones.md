@@ -57,7 +57,7 @@ notes), same six-layer structure:
 
 **Status:** Complete.
 
-## M4 — CI (in progress)
+## M4 — CI (done)
 
 **Goal:** close the `--no-verify` gap — pre-commit only enforces rules on
 machines where hooks are installed and not bypassed; CI enforces them
@@ -65,11 +65,10 @@ regardless.
 
 - Added `.github/workflows/ci.yml`: runs ruff, ruff format check,
   import-linter, pytest, golden-rules on every push/PR
-- Requires pushing this repo to GitHub for the workflow to actually run
-  (previously local-only) — remote setup in progress
+- Repo pushed to `github.com/SeifEhab30/AI-Agent-framework`
+- First CI run confirmed green on GitHub Actions
 
-**Status:** Workflow file added; pending GitHub remote + first push to
-confirm it actually runs.
+**Status:** Complete. CI is live and enforcing on every push.
 
 ## Backlog (unscheduled, not yet milestones)
 
