@@ -16,4 +16,4 @@ No auth, no multi-user separation, no rich text, no relation to the
 pattern generalizes past one domain — see
 [docs/exec-plans/active/milestones.md](../exec-plans/active/milestones.md) M2.
 
-See also [old notes draft](src/todoapp/notes/draft_v0.py) for early exploration.
+See also old notes draft for early exploration.
