@@ -18,5 +18,8 @@ Verified: 2026-08-12
   the fast local gate; CI is the one that can't be skipped with
   `--no-verify`.
 - CI also runs `doc_gardener.py`, but non-blocking (`continue-on-error`) —
-  it prints its report without failing the build, until it grows the
-  ability to auto-fix instead of just flag.
+  it prints its report without failing the build.
+- `doc_gardener.py --fix` auto-fixes one narrow case: unlinking a markdown
+  link that points at a deleted file. It never edits prose, never bumps a
+  `Verified:` date, and never touches anything else — those always need a
+  human to actually read the doc and decide.

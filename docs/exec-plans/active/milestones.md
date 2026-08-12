@@ -108,6 +108,36 @@ domain folders, same as `runtime.py`/`ui.py` do within a domain.
 **Status:** Complete. Merged via PR, CI green, branch protection exercised
 end-to-end.
 
+## M7 — Doc-gardener automation (in progress)
+
+**Goal:** move doc-gardener from "run it by hand and hope someone reads
+the output" to actually catching drift on its own — without letting an
+automated process silently rewrite doc content.
+
+Scope, deliberately narrow:
+- `doc_gardener.py --fix` auto-fixes exactly one thing: a markdown link
+  `[text](path)` where `path` no longer exists gets unlinked to plain
+  text. Nothing else is ever auto-edited — a stale `Verified:` date is
+  still report-only, since deciding a doc is still accurate needs a human
+  to read it, not a date bump.
+- Always writes `docs/quality-score/report.md` with the full findings.
+- New `.github/workflows/doc-gardener.yml`: runs weekly (Monday 06:00
+  UTC) plus on-demand via `workflow_dispatch`. If `--fix` changed
+  anything, it commits to a new branch and opens a PR using the
+  Actions-provided `GITHUB_TOKEN` (no secrets needed from the user).
+  Nothing merges automatically — same branch protection + CI gate as
+  every other change.
+
+Verified locally: deliberately added a broken markdown link, confirmed
+it's flagged without `--fix`, confirmed `--fix` unlinks it and only it
+(surrounding prose untouched), confirmed the report file updates
+correctly, then removed the test link.
+
+**Status:** Built and verified locally; pending branch + PR to merge, and
+a manual `workflow_dispatch` run on GitHub to confirm the PR-opening step
+actually works (the cron trigger itself can't be tested until it's due).
+
 ## Backlog (unscheduled, not yet milestones)
 
-- Doc-gardener auto-fix or PR automation (currently report-only)
+(none — all four original practices plus CI/branch-protection hardening
+are now built)
