@@ -17,3 +17,6 @@ Verified: 2026-08-12
   (ruff, ruff format, import-linter, pytest, golden-rules). Pre-commit is
   the fast local gate; CI is the one that can't be skipped with
   `--no-verify`.
+- CI also runs `doc_gardener.py`, but non-blocking (`continue-on-error`) —
+  it prints its report without failing the build, until it grows the
+  ability to auto-fix instead of just flag.

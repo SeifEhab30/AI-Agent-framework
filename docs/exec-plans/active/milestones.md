@@ -65,6 +65,8 @@ regardless.
 
 - Added `.github/workflows/ci.yml`: runs ruff, ruff format check,
   import-linter, pytest, golden-rules on every push/PR
+- Added `doc_gardener.py` as a non-blocking CI step (reports only, doesn't
+  fail the build — revisit once it can auto-fix instead of just flag)
 - Repo pushed to `github.com/SeifEhab30/AI-Agent-framework`
 - First CI run confirmed green on GitHub Actions
 
