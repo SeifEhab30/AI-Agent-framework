@@ -16,3 +16,15 @@ uvicorn todoapp.app:app --reload
 Runs widgets, notes, and bookmarks together under one app. Each domain is
 also independently runnable (e.g. `uvicorn todoapp.widgets.ui:app`) for
 isolated testing.
+
+## Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+React + Vite, talks to the backend at `http://localhost:8000` (CORS is
+enabled for `http://localhost:5173`, the Vite dev server's default port).
+Run the backend first.

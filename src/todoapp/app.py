@@ -8,6 +8,7 @@ Run: uvicorn todoapp.app:app --reload
 """
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from todoapp.bookmarks.runtime import build_runtime as build_bookmarks_runtime
 from todoapp.bookmarks.ui import build_router as build_bookmarks_router
@@ -19,6 +20,12 @@ from todoapp.widgets.ui import build_router as build_widgets_router
 
 def build_app() -> FastAPI:
     app = FastAPI(title="Todoapp")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     widgets = build_widgets_runtime()
     app.include_router(build_widgets_router(widgets.service, widgets.providers.telemetry.event))

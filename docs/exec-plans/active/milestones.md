@@ -271,6 +271,24 @@ to service.py.
 gap) live on master. Awaiting the routine's next run(s) to see what it
 produces for each.
 
+## M11 — React frontend (first pass, needs design work)
+
+**Goal:** first shift from framework-only work to the product itself —
+a real UI instead of only the Swagger docs.
+
+Added `frontend/`: React + Vite, one page with a tab per domain
+(widgets, notes, bookmarks), calling the backend API directly
+(`localhost:8000`). CORS enabled on `app.py` for the Vite dev origin
+(`localhost:5173`). Verified live: created a widget, toggled it, created
+a note, created a bookmark, all through the actual UI, not just the API.
+
+Deliberately minimal — no styling system, no component library, no
+routing. Functional but rough; explicitly flagged as needing a real
+design pass.
+
+**Status:** Functional, unstyled. Design/UX pass is follow-up work, not
+done yet.
+
 ## Backlog (unscheduled, not yet milestones)
 
 (none — all four original practices, CI/branch-protection hardening, and
