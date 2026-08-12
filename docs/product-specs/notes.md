@@ -9,6 +9,7 @@ A minimal note. A note has a title and a body.
 - Create a note with a non-empty title (whitespace-only titles are rejected).
 - List all notes.
 - Update a note's body.
+- Delete a note by id.
 
 ## Non-goals
 No auth, no multi-user separation, no rich text, no relation to the
