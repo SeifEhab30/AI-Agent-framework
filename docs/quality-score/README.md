@@ -1,6 +1,6 @@
 # Quality Score
 
-Verified: 2026-08-12
+Verified: 2026-08-17
 
 This folder holds the output of automated repo-health checks, starting with
 `scripts/doc_gardener.py`, which flags stale or broken doc references and

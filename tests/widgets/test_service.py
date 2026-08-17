@@ -36,3 +36,10 @@ def test_toggle_done(service: WidgetService):
 def test_toggle_missing_raises(service: WidgetService):
     with pytest.raises(NotFoundError):
         service.toggle_done("nope")
+
+
+def test_toggle_done_twice_untoggles(service: WidgetService):
+    widget = service.create_widget(WidgetCreate(title="buy milk"))
+    service.toggle_done(widget.id)
+    toggled_again = service.toggle_done(widget.id)
+    assert toggled_again.done is False
