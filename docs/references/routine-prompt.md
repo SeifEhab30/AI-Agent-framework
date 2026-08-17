@@ -16,13 +16,15 @@ much as any lint rule does, so they belong under the same bar.
 
 ## Status
 
-**DRAFT — not yet applied.** Written 2026-08-17 while the unattended-cron
-verification window was still open. Applying it before that window closed
-would have meant testing instructions that had never been validated, so
-it was deliberately held. Apply after the Monday run is observed and
-recorded.
+**APPLIED.** Written 2026-08-17 while the unattended-cron verification
+window was still open, held until that window closed, then synced to the
+live trigger the same day after tier 2 was confirmed (both the GitHub
+Actions cron and this Routine fired unattended, and the Routine correctly
+fixed the planted bug and correctly declined the out-of-scope one — see
+`docs/exec-plans/active/milestones.md` M10). Next scheduled fire:
+2026-08-24.
 
-Changes from the live version:
+Changes from the previous (pre-M13) version:
 
 1. **Domain list corrected** — live prompt says "currently widgets,
    notes, bookmarks", which predates M13. `widgets` was renamed to
