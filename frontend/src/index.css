@@ -1,7 +1,36 @@
 :root {
-  color-scheme: light dark;
+  --drawer: #1f3a34;
+  --drawer-deep: #16302b;
+  --card: #ede6d6;
+  --card-alt: #e3d9c4;
+  --ink: #241c12;
+  --brass: #c08a34;
+  --brass-bright: #d9a24a;
+  --stamp: #8b3a2b;
+
+  --font-display: "Special Elite", "Courier New", monospace;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background: var(--drawer);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

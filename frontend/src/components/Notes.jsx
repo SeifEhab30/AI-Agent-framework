@@ -40,7 +40,7 @@ export default function Notes() {
   return (
     <section>
       <h2>Notes</h2>
-      <form onSubmit={handleCreate} className="col">
+      <form onSubmit={handleCreate} className="new-card col">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -54,9 +54,9 @@ export default function Notes() {
         <button type="submit">Add</button>
       </form>
       {error && <p className="error">{error}</p>}
-      <ul>
+      <ul className="card-list">
         {notes.map((n) => (
-          <li key={n.id} className="col">
+          <li key={n.id} className="entry-card entry-note">
             <strong>{n.title}</strong>
             <textarea
               value={drafts[n.id] ?? n.body}

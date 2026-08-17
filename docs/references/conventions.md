@@ -27,3 +27,9 @@ Verified: 2026-08-17
   specific exception. Enforced by `scripts/check_golden_rules.py`.
 - No `print()` in domain code — use the `providers` logger instead.
   Enforced by `scripts/check_golden_rules.py`.
+- A new domain is not "added" until it is fully declared: all six layer
+  files present, a layering contract, a forbidden-providers contract, and
+  a slot in the independence contract in `pyproject.toml`, plus a row in
+  MAP.md's domain table. Enforced by `scripts/check_golden_rules.py` —
+  adding a domain folder without its contracts now fails CI rather than
+  relying on someone remembering the pattern.

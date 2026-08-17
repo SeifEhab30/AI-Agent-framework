@@ -11,19 +11,19 @@ class WidgetService:
         self._repo = repo
 
     def create_widget(self, data: WidgetCreate) -> Widget:
-        title = data.title.strip()
-        if not title:
-            raise ValidationError("title must not be empty")
-        widget = Widget(id=new_id(), title=title, done=False, created_at=datetime.now(UTC))
+        label = data.label.strip()
+        if not label:
+            raise ValidationError("label must not be empty")
+        widget = Widget(id=new_id(), label=label, value=data.value, created_at=datetime.now(UTC))
         self._repo.add(widget)
         return widget
 
     def list_widgets(self) -> list[Widget]:
         return self._repo.list_all()
 
-    def toggle_done(self, widget_id: str) -> Widget:
+    def set_value(self, widget_id: str, value: int) -> Widget:
         widget = self._repo.get(widget_id)
         if widget is None:
             raise NotFoundError(f"widget {widget_id} not found")
-        self._repo.set_done(widget_id, not widget.done)
+        self._repo.set_value(widget_id, value)
         return self._repo.get(widget_id)

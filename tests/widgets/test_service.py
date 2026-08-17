@@ -15,31 +15,29 @@ def service() -> WidgetService:
 
 
 def test_create_and_list(service: WidgetService):
-    service.create_widget(WidgetCreate(title="buy milk"))
+    service.create_widget(WidgetCreate(label="Signups today", value=42))
     widgets = service.list_widgets()
     assert len(widgets) == 1
-    assert widgets[0].title == "buy milk"
-    assert widgets[0].done is False
+    assert widgets[0].label == "Signups today"
+    assert widgets[0].value == 42
 
 
-def test_create_rejects_blank_title(service: WidgetService):
+def test_create_defaults_value_to_zero(service: WidgetService):
+    widget = service.create_widget(WidgetCreate(label="Errors"))
+    assert widget.value == 0
+
+
+def test_create_rejects_blank_label(service: WidgetService):
     with pytest.raises(ValidationError):
-        service.create_widget(WidgetCreate(title="   "))
+        service.create_widget(WidgetCreate(label="   "))
 
 
-def test_toggle_done(service: WidgetService):
-    widget = service.create_widget(WidgetCreate(title="buy milk"))
-    toggled = service.toggle_done(widget.id)
-    assert toggled.done is True
+def test_set_value(service: WidgetService):
+    widget = service.create_widget(WidgetCreate(label="Signups today", value=42))
+    updated = service.set_value(widget.id, 100)
+    assert updated.value == 100
 
 
-def test_toggle_missing_raises(service: WidgetService):
+def test_set_value_missing_raises(service: WidgetService):
     with pytest.raises(NotFoundError):
-        service.toggle_done("nope")
-
-
-def test_toggle_done_twice_untoggles(service: WidgetService):
-    widget = service.create_widget(WidgetCreate(title="buy milk"))
-    service.toggle_done(widget.id)
-    toggled_again = service.toggle_done(widget.id)
-    assert toggled_again.done is False
+        service.set_value("nope", 1)

@@ -13,9 +13,9 @@ pip install -r requirements.txt
 uvicorn todoapp.app:app --reload
 ```
 
-Runs widgets, notes, and bookmarks together under one app. Each domain is
-also independently runnable (e.g. `uvicorn todoapp.widgets.ui:app`) for
-isolated testing.
+Runs todos, notes, bookmarks, and widgets together under one app. Each
+domain is also independently runnable (e.g. `uvicorn todoapp.todos.ui:app`)
+for isolated testing.
 
 ## Frontend
 

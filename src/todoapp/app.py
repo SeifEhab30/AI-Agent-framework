@@ -14,6 +14,8 @@ from todoapp.bookmarks.runtime import build_runtime as build_bookmarks_runtime
 from todoapp.bookmarks.ui import build_router as build_bookmarks_router
 from todoapp.notes.runtime import build_runtime as build_notes_runtime
 from todoapp.notes.ui import build_router as build_notes_router
+from todoapp.todos.runtime import build_runtime as build_todos_runtime
+from todoapp.todos.ui import build_router as build_todos_router
 from todoapp.widgets.runtime import build_runtime as build_widgets_runtime
 from todoapp.widgets.ui import build_router as build_widgets_router
 
@@ -27,8 +29,8 @@ def build_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    widgets = build_widgets_runtime()
-    app.include_router(build_widgets_router(widgets.service, widgets.providers.telemetry.event))
+    todos = build_todos_runtime()
+    app.include_router(build_todos_router(todos.service, todos.providers.telemetry.event))
 
     notes = build_notes_runtime()
     app.include_router(build_notes_router(notes.service, notes.providers.telemetry.event))
@@ -37,6 +39,9 @@ def build_app() -> FastAPI:
     app.include_router(
         build_bookmarks_router(bookmarks.service, bookmarks.providers.telemetry.event)
     )
+
+    widgets = build_widgets_runtime()
+    app.include_router(build_widgets_router(widgets.service, widgets.providers.telemetry.event))
 
     return app
 

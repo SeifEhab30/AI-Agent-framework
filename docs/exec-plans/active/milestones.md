@@ -239,7 +239,8 @@ un-marks. Confirmed this passes ruff, pytest (existing `test_toggle_done`
 only checks `False → True`, never toggles twice), and
 `check_golden_rules.py` — genuinely invisible to every current automated
 check, only findable by comparing behavior against
-`docs/product-specs/widgets-todo.md` ("Toggle a widget's done state").
+docs/product-specs/widgets-todo.md, as it was named at the time
+("Toggle a widget's done state").
 
 **The scope widening:** routine prompt updated to also do a bounded
 code-health review — read each domain's product-spec, compare against
@@ -271,7 +272,7 @@ to service.py.
 gap) live on master. Awaiting the routine's next run(s) to see what it
 produces for each.
 
-## M11 — React frontend (first pass, needs design work)
+## M11 — React frontend (done)
 
 **Goal:** first shift from framework-only work to the product itself —
 a real UI instead of only the Swagger docs.
@@ -282,12 +283,77 @@ Added `frontend/`: React + Vite, one page with a tab per domain
 (`localhost:5173`). Verified live: created a widget, toggled it, created
 a note, created a bookmark, all through the actual UI, not just the API.
 
-Deliberately minimal — no styling system, no component library, no
-routing. Functional but rough; explicitly flagged as needing a real
-design pass.
+**Status:** Complete. First pass was deliberately minimal/unstyled; the
+design pass landed as M12.
 
-**Status:** Functional, unstyled. Design/UX pass is follow-up work, not
-done yet.
+## M12 — Card catalog redesign (done)
+
+**Goal:** replace the unstyled first pass with a real, distinctive
+visual identity — not a generic productivity-app template.
+
+**Concept:** a library card catalog — three small collections (checklist
+items, notes, links) organized like drawers of index cards. Chosen to
+avoid the generic AI-default looks (cream+serif+terracotta,
+near-black+neon, broadsheet hairlines).
+
+- Palette: deep teal drawer chrome (`#1F3A34`/`#16302B`), bone card
+  stock (`#EDE6D6`/`#E3D9C4`), warm ink (`#241C12`), brass accent
+  (`#C08A34`/`#D9A24A`), stamp red (`#8B3A2B`)
+- Type: *Special Elite* (typewriter display, used sparingly — title and
+  tab labels only), *IBM Plex Sans* (body), *IBM Plex Mono* (utility)
+- Structure: brass drawer-label tabs switch domains; each entry is a
+  punch-hole card; new-entry form is an inline slot, not a modal
+- Signature element: marking a widget done stamps a rotated "DONE" mark
+  in stamp red — the one moment of flourish, everything else stays quiet
+
+Verified live: fonts/colors apply correctly (checked via computed
+styles), all three tabs render and function, card-in and stamp
+animations fire, no horizontal overflow at mobile width (375px),
+heading text stays in the accessibility tree (visually hidden via
+clip technique, not `display: none`), keyboard focus states defined on
+inputs/buttons/tabs, `prefers-reduced-motion` respected.
+
+**Status:** Complete.
+
+## M13 — Rename widgets → todos, add real widgets domain (done)
+
+**Goal:** the original `widgets` domain always behaved like a todo list
+(title + done, toggle) — "widget" never meant anything distinct. Fix the
+naming and give "widget" its actual meaning: a small dashboard tile
+(label + numeric value), as a genuine 4th domain.
+
+- Renamed `src/todoapp/widgets/` → `todos/`, `tests/widgets/` →
+  `tests/todos/`, docs/product-specs/widgets-todo.md → `todos.md`.
+  Classes renamed (`Widget`→`Todo`, etc.), table renamed, API prefix
+  `/widgets` → `/todos`, env prefix scoped to `TODOAPP_TODOS_` (was
+  unscoped `TODOAPP_`, now consistent with sibling domains). Also fixed
+  the `toggle_done` bug while rewriting the file (orthogonal to the
+  live M10 test on `master`, which is a separate, untouched branch).
+- Added a genuine new `widgets` domain: `Widget{id, label, value,
+  created_at}`, create/list/set-value, same six-layer structure, reuses
+  `providers/`/`platform/` unmodified.
+- `pyproject.toml`: import-linter contracts renamed/added — now 9
+  contracts across 4 domains (todos, notes, bookmarks, widgets), all
+  kept, independence contract covers all four.
+- Frontend: `Widgets.jsx` renamed to `Todos.jsx` (kept card-catalog
+  styling), new `Widgets.jsx` built as a dashboard tile matching the
+  same card system. 4-tab layout, `todosApi`/`widgetsApi` added to
+  `api.js`.
+- `docs/product-specs/todos.md` carries a History note explaining the
+  rename so the "widgets" mentions in M1/M2/M3/M6 read correctly as
+  historical record, not a stale reference — per house style, docs
+  should never silently rewrite history.
+
+Verified: 18 backend tests pass (todos 5, notes 4, bookmarks 4, widgets
+5), all 9 import-linter contracts kept, golden-rules clean, both new API
+routes (`/todos`, `/widgets`) verified live via curl and through the
+actual frontend UI (create + set-value on a widget, all 4 tabs render).
+
+**Note:** this work happened on an unpushed local branch, same as M12 —
+holding all pushes until after this week's cron-verification window
+(M7/M9's open item) resolves, so `master` stays untouched for that test.
+
+**Status:** Complete, not yet pushed.
 
 ## Backlog (unscheduled, not yet milestones)
 

@@ -5,14 +5,15 @@ from pydantic import BaseModel
 
 class Widget(BaseModel):
     id: str
-    title: str
-    done: bool
+    label: str
+    value: int
     created_at: datetime
 
 
 class WidgetCreate(BaseModel):
-    title: str
+    label: str
+    value: int = 0
 
 
 class WidgetUpdate(BaseModel):
-    done: bool
+    value: int
