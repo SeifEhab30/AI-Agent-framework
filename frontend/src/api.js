@@ -12,11 +12,11 @@ async function request(path, options = {}) {
   return res.status === 204 ? null : res.json();
 }
 
-export const widgetsApi = {
-  list: () => request("/widgets"),
+export const todosApi = {
+  list: () => request("/todos"),
   create: (title) =>
-    request("/widgets", { method: "POST", body: JSON.stringify({ title }) }),
-  toggle: (id) => request(`/widgets/${id}/toggle`, { method: "POST" }),
+    request("/todos", { method: "POST", body: JSON.stringify({ title }) }),
+  toggle: (id) => request(`/todos/${id}/toggle`, { method: "POST" }),
 };
 
 export const notesApi = {
@@ -33,4 +33,12 @@ export const bookmarksApi = {
     request("/bookmarks", { method: "POST", body: JSON.stringify({ url, title }) }),
   rename: (id, title) =>
     request(`/bookmarks/${id}`, { method: "POST", body: JSON.stringify({ title }) }),
+};
+
+export const widgetsApi = {
+  list: () => request("/widgets"),
+  create: (label, value) =>
+    request("/widgets", { method: "POST", body: JSON.stringify({ label, value }) }),
+  setValue: (id, value) =>
+    request(`/widgets/${id}`, { method: "POST", body: JSON.stringify({ value }) }),
 };

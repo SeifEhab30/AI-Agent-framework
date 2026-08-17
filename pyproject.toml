@@ -25,26 +25,26 @@ testpaths = ["tests"]
 root_package = "todoapp"
 
 [[tool.importlinter.contracts]]
-name = "Widgets domain layering"
+name = "Todos domain layering"
 type = "layers"
 layers = [
-    "todoapp.widgets.ui",
-    "todoapp.widgets.runtime",
-    "todoapp.widgets.service",
-    "todoapp.widgets.repo",
-    "todoapp.widgets.config",
-    "todoapp.widgets.types",
+    "todoapp.todos.ui",
+    "todoapp.todos.runtime",
+    "todoapp.todos.service",
+    "todoapp.todos.repo",
+    "todoapp.todos.config",
+    "todoapp.todos.types",
 ]
 
 [[tool.importlinter.contracts]]
-name = "Only runtime may import providers"
+name = "Only runtime may import providers (todos)"
 type = "forbidden"
 source_modules = [
-    "todoapp.widgets.types",
-    "todoapp.widgets.config",
-    "todoapp.widgets.repo",
-    "todoapp.widgets.service",
-    "todoapp.widgets.ui",
+    "todoapp.todos.types",
+    "todoapp.todos.config",
+    "todoapp.todos.repo",
+    "todoapp.todos.service",
+    "todoapp.todos.ui",
 ]
 forbidden_modules = ["todoapp.providers"]
 allow_indirect_imports = true
@@ -100,10 +100,36 @@ forbidden_modules = ["todoapp.providers"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
+name = "Widgets domain layering"
+type = "layers"
+layers = [
+    "todoapp.widgets.ui",
+    "todoapp.widgets.runtime",
+    "todoapp.widgets.service",
+    "todoapp.widgets.repo",
+    "todoapp.widgets.config",
+    "todoapp.widgets.types",
+]
+
+[[tool.importlinter.contracts]]
+name = "Only runtime may import providers (widgets)"
+type = "forbidden"
+source_modules = [
+    "todoapp.widgets.types",
+    "todoapp.widgets.config",
+    "todoapp.widgets.repo",
+    "todoapp.widgets.service",
+    "todoapp.widgets.ui",
+]
+forbidden_modules = ["todoapp.providers"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
 name = "Domains do not import each other"
 type = "independence"
 modules = [
-    "todoapp.widgets",
+    "todoapp.todos",
     "todoapp.notes",
     "todoapp.bookmarks",
+    "todoapp.widgets",
 ]

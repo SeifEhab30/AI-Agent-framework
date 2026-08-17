@@ -1,17 +1,19 @@
 import { useState } from "react";
-import Widgets from "./components/Widgets";
+import Todos from "./components/Todos";
 import Notes from "./components/Notes";
 import Bookmarks from "./components/Bookmarks";
+import Widgets from "./components/Widgets";
 import "./App.css";
 
 const TABS = {
-  widgets: Widgets,
+  todos: Todos,
   notes: Notes,
   bookmarks: Bookmarks,
+  widgets: Widgets,
 };
 
 export default function App() {
-  const [tab, setTab] = useState("widgets");
+  const [tab, setTab] = useState("todos");
   const Active = TABS[tab];
 
   return (

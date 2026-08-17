@@ -64,9 +64,10 @@ top-level concern. See README.md for dev setup.
 
 | Domain    | Spec                                                              |
 |-----------|--------------------------------------------------------------------|
-| widgets   | [docs/product-specs/widgets-todo.md](docs/product-specs/widgets-todo.md) |
+| todos     | [docs/product-specs/todos.md](docs/product-specs/todos.md)         |
 | notes     | [docs/product-specs/notes.md](docs/product-specs/notes.md)         |
 | bookmarks | [docs/product-specs/bookmarks.md](docs/product-specs/bookmarks.md) |
+| widgets   | [docs/product-specs/widgets.md](docs/product-specs/widgets.md)     |
 
 ## Progress
 

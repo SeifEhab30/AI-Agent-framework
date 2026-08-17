@@ -239,7 +239,8 @@ un-marks. Confirmed this passes ruff, pytest (existing `test_toggle_done`
 only checks `False → True`, never toggles twice), and
 `check_golden_rules.py` — genuinely invisible to every current automated
 check, only findable by comparing behavior against
-`docs/product-specs/widgets-todo.md` ("Toggle a widget's done state").
+docs/product-specs/widgets-todo.md, as it was named at the time
+("Toggle a widget's done state").
 
 **The scope widening:** routine prompt updated to also do a bounded
 code-health review — read each domain's product-spec, compare against
@@ -313,6 +314,46 @@ clip technique, not `display: none`), keyboard focus states defined on
 inputs/buttons/tabs, `prefers-reduced-motion` respected.
 
 **Status:** Complete.
+
+## M13 — Rename widgets → todos, add real widgets domain (done)
+
+**Goal:** the original `widgets` domain always behaved like a todo list
+(title + done, toggle) — "widget" never meant anything distinct. Fix the
+naming and give "widget" its actual meaning: a small dashboard tile
+(label + numeric value), as a genuine 4th domain.
+
+- Renamed `src/todoapp/widgets/` → `todos/`, `tests/widgets/` →
+  `tests/todos/`, docs/product-specs/widgets-todo.md → `todos.md`.
+  Classes renamed (`Widget`→`Todo`, etc.), table renamed, API prefix
+  `/widgets` → `/todos`, env prefix scoped to `TODOAPP_TODOS_` (was
+  unscoped `TODOAPP_`, now consistent with sibling domains). Also fixed
+  the `toggle_done` bug while rewriting the file (orthogonal to the
+  live M10 test on `master`, which is a separate, untouched branch).
+- Added a genuine new `widgets` domain: `Widget{id, label, value,
+  created_at}`, create/list/set-value, same six-layer structure, reuses
+  `providers/`/`platform/` unmodified.
+- `pyproject.toml`: import-linter contracts renamed/added — now 9
+  contracts across 4 domains (todos, notes, bookmarks, widgets), all
+  kept, independence contract covers all four.
+- Frontend: `Widgets.jsx` renamed to `Todos.jsx` (kept card-catalog
+  styling), new `Widgets.jsx` built as a dashboard tile matching the
+  same card system. 4-tab layout, `todosApi`/`widgetsApi` added to
+  `api.js`.
+- `docs/product-specs/todos.md` carries a History note explaining the
+  rename so the "widgets" mentions in M1/M2/M3/M6 read correctly as
+  historical record, not a stale reference — per house style, docs
+  should never silently rewrite history.
+
+Verified: 18 backend tests pass (todos 5, notes 4, bookmarks 4, widgets
+5), all 9 import-linter contracts kept, golden-rules clean, both new API
+routes (`/todos`, `/widgets`) verified live via curl and through the
+actual frontend UI (create + set-value on a widget, all 4 tabs render).
+
+**Note:** this work happened on an unpushed local branch, same as M12 —
+holding all pushes until after this week's cron-verification window
+(M7/M9's open item) resolves, so `master` stays untouched for that test.
+
+**Status:** Complete, not yet pushed.
 
 ## Backlog (unscheduled, not yet milestones)
 

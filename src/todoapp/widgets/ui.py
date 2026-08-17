@@ -5,7 +5,7 @@ from fastapi import APIRouter, FastAPI, HTTPException
 from todoapp.platform.errors import NotFoundError, ValidationError
 from todoapp.widgets.runtime import build_runtime
 from todoapp.widgets.service import WidgetService
-from todoapp.widgets.types import Widget, WidgetCreate
+from todoapp.widgets.types import Widget, WidgetCreate, WidgetUpdate
 
 
 def build_router(service: WidgetService, emit_event: Callable[..., None]) -> APIRouter:
@@ -24,10 +24,10 @@ def build_router(service: WidgetService, emit_event: Callable[..., None]) -> API
         emit_event("widget_created", widget_id=widget.id)
         return widget
 
-    @router.post("/{widget_id}/toggle", response_model=Widget)
-    def toggle_widget(widget_id: str) -> Widget:
+    @router.post("/{widget_id}", response_model=Widget)
+    def set_widget_value(widget_id: str, data: WidgetUpdate) -> Widget:
         try:
-            return service.toggle_done(widget_id)
+            return service.set_value(widget_id, data.value)
         except NotFoundError as e:
             raise HTTPException(status_code=404, detail=str(e)) from e
 
