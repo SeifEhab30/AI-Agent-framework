@@ -2,7 +2,7 @@ name: Doc Gardener
 
 on:
   schedule:
-    - cron: "33 10 * * 1" # weekly, Monday 10:33 UTC = Monday 1:33 GMT+3
+    - cron: "33 10 * * 3" # weekly, Wednesday 10:33 UTC = Wednesday 1:33 GMT+3
   workflow_dispatch:
 
 permissions:
