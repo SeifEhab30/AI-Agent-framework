@@ -15,6 +15,8 @@ class BookmarkService:
         title = data.title.strip()
         if not url:
             raise ValidationError("url must not be empty")
+        if not title:
+            raise ValidationError("title must not be empty")
         bookmark = Bookmark(id=new_id(), url=url, title=title, created_at=datetime.now(UTC))
         self._repo.add(bookmark)
         return bookmark
