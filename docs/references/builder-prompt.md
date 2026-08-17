@@ -25,10 +25,12 @@ Routine's proven one.
 through the backend. Spec-drafting-from-a-one-line-request is an
 explicit future phase — not built, door left open below.
 
-Trigger: not yet created. Manual `action=run` only until several clean,
-independently-verified runs establish trust — same bar the maintenance
-Routine cleared (M10) before it was ever put on a cron. No cadence is
-pre-committed; that's a decision for after manual runs prove this out.
+Trigger: `trig_01H6QZXRUi4S2zdY2X9R2ZPy`, created 2026-08-17,
+**manual `action=run` only** (empty `cron_expression`, no schedule) until
+several clean, independently-verified runs establish trust — same bar the
+maintenance Routine cleared (M10) before it was ever put on a cron. No
+cadence is pre-committed; that's a decision for after manual runs prove
+this out.
 
 ## Prompt
 
