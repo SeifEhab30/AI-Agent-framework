@@ -14,12 +14,18 @@ class ReminderService:
         message = data.message.strip()
         if not message:
             raise ValidationError("message must not be empty")
-        if data.due_at <= datetime.now(UTC):
+        due_at = data.due_at
+        if due_at.tzinfo is None:
+            # A due_at submitted without a UTC offset parses as naive; comparing
+            # that directly against datetime.now(UTC) raises TypeError instead
+            # of the intended ValidationError. Treat a naive value as UTC.
+            due_at = due_at.replace(tzinfo=UTC)
+        if due_at <= datetime.now(UTC):
             raise ValidationError("due_at must be in the future")
         reminder = Reminder(
             id=new_id(),
             message=message,
-            due_at=data.due_at,
+            due_at=due_at,
             done=False,
             created_at=datetime.now(UTC),
         )

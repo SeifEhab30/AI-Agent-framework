@@ -44,6 +44,20 @@ def test_create_rejects_present_due_at(service: ReminderService):
         service.create_reminder(ReminderCreate(message="call mom", due_at=now))
 
 
+def test_create_accepts_naive_future_due_at(service: ReminderService):
+    # A due_at with no UTC offset parses as timezone-naive; this must not
+    # raise TypeError when compared against the (aware) current time.
+    naive_future = (datetime.now(UTC) + timedelta(days=1)).replace(tzinfo=None)
+    reminder = service.create_reminder(ReminderCreate(message="call mom", due_at=naive_future))
+    assert reminder.due_at.tzinfo is not None
+
+
+def test_create_rejects_naive_past_due_at(service: ReminderService):
+    naive_past = (datetime.now(UTC) - timedelta(days=1)).replace(tzinfo=None)
+    with pytest.raises(ValidationError):
+        service.create_reminder(ReminderCreate(message="call mom", due_at=naive_past))
+
+
 def test_mark_done(service: ReminderService):
     reminder = service.create_reminder(ReminderCreate(message="call mom", due_at=future()))
     marked = service.mark_done(reminder.id)
