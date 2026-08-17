@@ -73,6 +73,7 @@ top-level concern. See README.md for dev setup.
 | notes     | [docs/product-specs/notes.md](docs/product-specs/notes.md)         |
 | bookmarks | [docs/product-specs/bookmarks.md](docs/product-specs/bookmarks.md) |
 | widgets   | [docs/product-specs/widgets.md](docs/product-specs/widgets.md)     |
+| reminders | [docs/product-specs/reminders.md](docs/product-specs/reminders.md) |
 
 ## Progress
 
