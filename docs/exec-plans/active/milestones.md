@@ -1,6 +1,6 @@
 # Milestones
 
-Verified: 2026-08-12
+Verified: 2026-08-17
 
 Tracks progress on the Codex-style workflow scaffold, one milestone at a
 time. This is a single running log, not one file per milestone — update

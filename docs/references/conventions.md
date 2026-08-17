@@ -1,6 +1,6 @@
 # Conventions
 
-Verified: 2026-08-12
+Verified: 2026-08-17
 
 - Boundary validation: any function crossing a layer boundary (`service.py`,
   `ui.py`) takes a pydantic model, never a bare `dict`/`Any`.
