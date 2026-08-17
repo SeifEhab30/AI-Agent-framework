@@ -271,7 +271,7 @@ to service.py.
 gap) live on master. Awaiting the routine's next run(s) to see what it
 produces for each.
 
-## M11 — React frontend (first pass, needs design work)
+## M11 — React frontend (done)
 
 **Goal:** first shift from framework-only work to the product itself —
 a real UI instead of only the Swagger docs.
@@ -282,12 +282,37 @@ Added `frontend/`: React + Vite, one page with a tab per domain
 (`localhost:5173`). Verified live: created a widget, toggled it, created
 a note, created a bookmark, all through the actual UI, not just the API.
 
-Deliberately minimal — no styling system, no component library, no
-routing. Functional but rough; explicitly flagged as needing a real
-design pass.
+**Status:** Complete. First pass was deliberately minimal/unstyled; the
+design pass landed as M12.
 
-**Status:** Functional, unstyled. Design/UX pass is follow-up work, not
-done yet.
+## M12 — Card catalog redesign (done)
+
+**Goal:** replace the unstyled first pass with a real, distinctive
+visual identity — not a generic productivity-app template.
+
+**Concept:** a library card catalog — three small collections (checklist
+items, notes, links) organized like drawers of index cards. Chosen to
+avoid the generic AI-default looks (cream+serif+terracotta,
+near-black+neon, broadsheet hairlines).
+
+- Palette: deep teal drawer chrome (`#1F3A34`/`#16302B`), bone card
+  stock (`#EDE6D6`/`#E3D9C4`), warm ink (`#241C12`), brass accent
+  (`#C08A34`/`#D9A24A`), stamp red (`#8B3A2B`)
+- Type: *Special Elite* (typewriter display, used sparingly — title and
+  tab labels only), *IBM Plex Sans* (body), *IBM Plex Mono* (utility)
+- Structure: brass drawer-label tabs switch domains; each entry is a
+  punch-hole card; new-entry form is an inline slot, not a modal
+- Signature element: marking a widget done stamps a rotated "DONE" mark
+  in stamp red — the one moment of flourish, everything else stays quiet
+
+Verified live: fonts/colors apply correctly (checked via computed
+styles), all three tabs render and function, card-in and stamp
+animations fire, no horizontal overflow at mobile width (375px),
+heading text stays in the accessibility tree (visually hidden via
+clip technique, not `display: none`), keyboard focus states defined on
+inputs/buttons/tabs, `prefers-reduced-motion` respected.
+
+**Status:** Complete.
 
 ## Backlog (unscheduled, not yet milestones)
 

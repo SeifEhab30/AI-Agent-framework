@@ -37,7 +37,7 @@ export default function Widgets() {
   return (
     <section>
       <h2>Widgets</h2>
-      <form onSubmit={handleCreate} className="row">
+      <form onSubmit={handleCreate} className="new-card">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -46,13 +46,16 @@ export default function Widgets() {
         <button type="submit">Add</button>
       </form>
       {error && <p className="error">{error}</p>}
-      <ul>
+      <ul className="card-list">
         {widgets.map((w) => (
-          <li key={w.id}>
-            <label>
-              <input type="checkbox" checked={w.done} onChange={() => handleToggle(w.id)} />
-              <span className={w.done ? "done" : ""}>{w.title}</span>
-            </label>
+          <li key={w.id} className="entry-card">
+            <div className="entry-row">
+              <label>
+                <input type="checkbox" checked={w.done} onChange={() => handleToggle(w.id)} />
+                <span className={`entry-title ${w.done ? "done" : ""}`}>{w.title}</span>
+              </label>
+              {w.done && <span className="stamp">Done</span>}
+            </div>
           </li>
         ))}
       </ul>

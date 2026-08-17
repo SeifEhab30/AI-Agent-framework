@@ -41,19 +41,21 @@ export default function Bookmarks() {
   return (
     <section>
       <h2>Bookmarks</h2>
-      <form onSubmit={handleCreate} className="row">
+      <form onSubmit={handleCreate} className="new-card">
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL" />
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
         <button type="submit">Add</button>
       </form>
       {error && <p className="error">{error}</p>}
-      <ul>
+      <ul className="card-list">
         {bookmarks.map((b) => (
-          <li key={b.id}>
-            <a href={b.url} target="_blank" rel="noreferrer">
-              {b.title}
-            </a>
-            <button onClick={() => handleRename(b.id)}>Rename</button>
+          <li key={b.id} className="entry-card">
+            <div className="entry-row">
+              <a className="entry-link" href={b.url} target="_blank" rel="noreferrer">
+                {b.title}
+              </a>
+              <button onClick={() => handleRename(b.id)}>Rename</button>
+            </div>
           </li>
         ))}
       </ul>

@@ -15,20 +15,26 @@ export default function App() {
   const Active = TABS[tab];
 
   return (
-    <div className="app">
-      <h1>Todoapp</h1>
+    <div className="shell">
+      <header className="plate">
+        <span className="plate-label">Todoapp</span>
+        <span className="plate-sub">Card Catalog</span>
+      </header>
       <nav className="tabs">
         {Object.keys(TABS).map((name) => (
           <button
             key={name}
             className={name === tab ? "active" : ""}
             onClick={() => setTab(name)}
+            aria-current={name === tab ? "true" : undefined}
           >
             {name}
           </button>
         ))}
       </nav>
-      <Active />
+      <main className="drawer">
+        <Active />
+      </main>
     </div>
   );
 }
