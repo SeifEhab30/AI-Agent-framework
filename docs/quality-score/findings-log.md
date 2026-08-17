@@ -35,6 +35,7 @@ without discipline cannot be counted, which defeats the file's purpose.
 | `duplicate-helper` | A local helper reimplements something already in `platform/`. |
 | `error-handling` | Bare `except:`, or an error swallowed so a real failure hides. |
 | `observability` | `print()` in domain code instead of the providers logger. |
+| `harness-tooling` | A defect in the enforcement machinery itself (a check, script, or workflow) — the tools that catch everything else. |
 
 ## Follow-up types
 
@@ -57,6 +58,8 @@ written at the time of the fix.
 | 2026-08-12 | `behavior-spec-mismatch` | `todos/service.py` (then `widgets/`) | agentic Routine | `toggle_done` always set `done=True` instead of inverting | test — `test_toggle_done_flips_back_off` |
 | 2026-08-12 | `stale-doc-reference` | `docs/product-specs/notes.md` | doc-gardener | link to deleted `draft_v0.py` unlinked | none — gardener's `--fix` is the standing guard |
 | 2026-08-17 | `missing-declaration` | `scripts/check_golden_rules.py` | M13 review | adding a domain without contracts/MAP row passed silently | rule — golden rule 5 (domain declaration completeness) |
+| 2026-08-17 | `harness-tooling` | `scripts/doc_gardener.py` | first unattended cron run | staleness used file mtime, which every fresh CI checkout resets to "now" — so all docs read as stale once their `Verified:` date fell behind the run date | rule — date sources by git commit instead, and skip the check outright on a shallow clone rather than guess |
+| 2026-08-17 | `harness-tooling` | `.github/workflows/doc-gardener.yml` | first unattended cron run | gardener exited 1 on findings, failing the step before the commit/PR steps could run — the workflow could never open the PR it existed to open | rule — findings now exit 0; `--strict` opts into gating |
 
 ## Open / deliberately unfixed
 
