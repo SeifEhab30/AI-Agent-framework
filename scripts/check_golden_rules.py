@@ -7,19 +7,36 @@ Rule 3: no bare `except:` -- it swallows everything including
 KeyboardInterrupt/SystemExit, hiding real bugs.
 Rule 4: no print() in domain code (src/todoapp/**, excluding scripts/) --
 use the providers logger instead of ad hoc prints.
+Rule 5: every domain folder must be fully declared -- all six layer files
+present, layering + forbidden-providers + independence contracts in
+pyproject.toml, and a row in MAP.md's domain table. Stops a new domain
+from silently escaping the architecture rules the others are held to.
 
 Usage: python scripts/check_golden_rules.py
 """
 
 import ast
+import re
 import sys
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = REPO_ROOT / "src" / "todoapp"
 PLATFORM_DIR = SRC_DIR / "platform"
+PYPROJECT = REPO_ROOT / "pyproject.toml"
+MAP_FILE = REPO_ROOT / "MAP.md"
 BOUNDARY_FILENAMES = {"service.py", "ui.py"}
 DISALLOWED_ANNOTATIONS = {"dict", "Dict", "Any"}
+LAYER_FILENAMES = {
+    "types.py",
+    "config.py",
+    "repo.py",
+    "service.py",
+    "runtime.py",
+    "ui.py",
+}
+NON_DOMAIN_DIRS = {"providers", "platform", "__pycache__"}
 
 
 def platform_function_names() -> set[str]:
@@ -102,6 +119,94 @@ def check_no_print(path: Path) -> list[str]:
     return issues
 
 
+def discover_domains() -> tuple[list[str], list[str]]:
+    """Find domain folders. Returns (complete domains, issues for partial ones)."""
+    domains, issues = [], []
+    for path in sorted(SRC_DIR.iterdir()):
+        if not path.is_dir() or path.name in NON_DOMAIN_DIRS:
+            continue
+        present = {p.name for p in path.glob("*.py")} & LAYER_FILENAMES
+        if not present:
+            continue
+        missing = LAYER_FILENAMES - present
+        if missing:
+            issues.append(
+                f"src/todoapp/{path.name}/: incomplete domain -- missing "
+                f"{', '.join(sorted(missing))}. One domain = one folder with "
+                f"all six layer files."
+            )
+            continue
+        domains.append(path.name)
+    return domains, issues
+
+
+def declared_contracts() -> tuple[set[str], set[str], set[str]]:
+    """Domains covered by each contract type in pyproject.toml."""
+    data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    contracts = data.get("tool", {}).get("importlinter", {}).get("contracts", [])
+    layered: set[str] = set()
+    guarded: set[str] = set()
+    independent: set[str] = set()
+
+    def domain_of(module: str) -> str | None:
+        parts = module.split(".")
+        return parts[1] if len(parts) > 1 and parts[0] == "todoapp" else None
+
+    for contract in contracts:
+        kind = contract.get("type")
+        if kind == "layers":
+            found = {domain_of(m) for m in contract.get("layers", [])}
+            layered |= {d for d in found if d}
+        elif kind == "forbidden":
+            if "todoapp.providers" in contract.get("forbidden_modules", []):
+                found = {domain_of(m) for m in contract.get("source_modules", [])}
+                guarded |= {d for d in found if d}
+        elif kind == "independence":
+            found = {domain_of(m) for m in contract.get("modules", [])}
+            independent |= {d for d in found if d}
+
+    return layered, guarded, independent
+
+
+def mapped_domains() -> set[str]:
+    """Domain names listed in MAP.md's 'Current domains' table."""
+    text = MAP_FILE.read_text(encoding="utf-8")
+    section = text.split("## Current domains", 1)
+    if len(section) < 2:
+        return set()
+    rows = re.findall(r"^\|\s*([A-Za-z0-9_-]+)\s*\|", section[1], re.MULTILINE)
+    return {row for row in rows if row not in {"Domain", "-"}}
+
+
+def check_domain_registration() -> list[str]:
+    domains, issues = discover_domains()
+    layered, guarded, independent = declared_contracts()
+    mapped = mapped_domains()
+
+    for domain in domains:
+        if domain not in layered:
+            issues.append(
+                f"domain '{domain}' has no layering contract in pyproject.toml -- "
+                f"add a 'layers' contract for todoapp.{domain}"
+            )
+        if domain not in guarded:
+            issues.append(
+                f"domain '{domain}' has no forbidden-providers contract in "
+                f"pyproject.toml -- only runtime.py may reach providers/"
+            )
+        if domain not in independent:
+            issues.append(
+                f"domain '{domain}' is missing from the independence contract in "
+                f"pyproject.toml -- domains must not import each other"
+            )
+        if domain not in mapped:
+            issues.append(
+                f"domain '{domain}' is not listed in MAP.md's domain table -- "
+                f"agents find domains through MAP.md, so it must be indexed there"
+            )
+    return issues
+
+
 def main() -> int:
     issues: list[str] = []
     reserved = platform_function_names()
@@ -114,6 +219,8 @@ def main() -> int:
         issues.extend(check_duplicate_helpers(path, reserved))
         issues.extend(check_bare_except(path))
         issues.extend(check_no_print(path))
+
+    issues.extend(check_domain_registration())
 
     if not issues:
         print("check_golden_rules: no violations found.")
