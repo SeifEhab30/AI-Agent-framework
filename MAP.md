@@ -57,6 +57,11 @@ top-level concern. See README.md for dev setup.
   `.github/workflows/doc-gardener.yml`, opening a PR — nothing auto-merges.
 - `scripts/check_golden_rules.py` — golden-principle checks not covered by ruff.
   Run: `python scripts/check_golden_rules.py`
+- `docs/quality-score/findings-log.md` — every issue the harness catches,
+  tagged by category. A category appearing twice should become a check,
+  not another one-off fix.
+- `docs/references/routine-prompt.md` — source of truth for the scheduled
+  maintenance agent's instructions. Edit here, then sync to the trigger.
 - CI (`.github/workflows/ci.yml`) — runs the same checks as pre-commit on
   every push/PR; catches anything a local `--no-verify` skipped.
 
