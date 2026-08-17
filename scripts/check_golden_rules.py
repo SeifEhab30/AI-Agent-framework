@@ -11,6 +11,11 @@ Rule 5: every domain folder must be fully declared -- all six layer files
 present, layering + forbidden-providers + independence contracts in
 pyproject.toml, and a row in MAP.md's domain table. Stops a new domain
 from silently escaping the architecture rules the others are held to.
+Rule 6: in service.py, a string variable assigned from a `.strip()` call
+must be blank-checked (`if not <name>: raise ...`) somewhere in the same
+function. Stripping only makes sense if the result is then validated --
+a stripped-but-unchecked field is exactly how a required-field check goes
+missing without any test or lint catching it.
 
 Usage: python scripts/check_golden_rules.py
 """
@@ -119,6 +124,46 @@ def check_no_print(path: Path) -> list[str]:
     return issues
 
 
+def check_unvalidated_stripped_fields(path: Path) -> list[str]:
+    """Rule 6: a `.strip()`'d local must be blank-checked in the same function."""
+    issues = []
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        stripped_vars: dict[str, int] = {}
+        checked_vars: set[str] = set()
+        for stmt in node.body:
+            if (
+                isinstance(stmt, ast.Assign)
+                and len(stmt.targets) == 1
+                and isinstance(stmt.targets[0], ast.Name)
+                and isinstance(stmt.value, ast.Call)
+                and isinstance(stmt.value.func, ast.Attribute)
+                and stmt.value.func.attr == "strip"
+            ):
+                stripped_vars[stmt.targets[0].id] = stmt.lineno
+            elif isinstance(stmt, ast.If):
+                test = stmt.test
+                name = None
+                if (
+                    isinstance(test, ast.UnaryOp)
+                    and isinstance(test.op, ast.Not)
+                    and isinstance(test.operand, ast.Name)
+                ):
+                    name = test.operand.id
+                if name and any(isinstance(s, ast.Raise) for s in stmt.body):
+                    checked_vars.add(name)
+        for name, lineno in stripped_vars.items():
+            if name not in checked_vars:
+                issues.append(
+                    f"{path.relative_to(REPO_ROOT)}:{lineno}: "
+                    f"'{name}' is stripped but never blank-checked -- add "
+                    f"'if not {name}: raise ValidationError(...)' or drop the strip()"
+                )
+    return issues
+
+
 def discover_domains() -> tuple[list[str], list[str]]:
     """Find domain folders. Returns (complete domains, issues for partial ones)."""
     domains, issues = [], []
@@ -219,6 +264,8 @@ def main() -> int:
         issues.extend(check_duplicate_helpers(path, reserved))
         issues.extend(check_bare_except(path))
         issues.extend(check_no_print(path))
+        if path.name == "service.py":
+            issues.extend(check_unvalidated_stripped_fields(path))
 
     issues.extend(check_domain_registration())
 

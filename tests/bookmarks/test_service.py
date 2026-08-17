@@ -27,6 +27,11 @@ def test_create_rejects_blank_url(service: BookmarkService):
         service.create_bookmark(BookmarkCreate(url="   ", title="Example"))
 
 
+def test_create_rejects_blank_title(service: BookmarkService):
+    with pytest.raises(ValidationError):
+        service.create_bookmark(BookmarkCreate(url="https://example.com", title="   "))
+
+
 def test_rename(service: BookmarkService):
     bookmark = service.create_bookmark(BookmarkCreate(url="https://example.com", title="Example"))
     renamed = service.rename(bookmark.id, "New Title")
