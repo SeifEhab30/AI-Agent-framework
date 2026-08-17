@@ -60,6 +60,7 @@ written at the time of the fix.
 | 2026-08-17 | `missing-declaration` | `scripts/check_golden_rules.py` | M13 review | adding a domain without contracts/MAP row passed silently | rule — golden rule 5 (domain declaration completeness) |
 | 2026-08-17 | `harness-tooling` | `scripts/doc_gardener.py` | first unattended cron run | staleness used file mtime, which every fresh CI checkout resets to "now" — so all docs read as stale once their `Verified:` date fell behind the run date | rule — date sources by git commit instead, and skip the check outright on a shallow clone rather than guess |
 | 2026-08-17 | `harness-tooling` | `.github/workflows/doc-gardener.yml` | first unattended cron run | gardener exited 1 on findings, failing the step before the commit/PR steps could run — the workflow could never open the PR it existed to open | rule — findings now exit 0; `--strict` opts into gating |
+| 2026-08-17 | `behavior-spec-mismatch` | `bookmarks/service.py` | agentic Routine (step 2 spec review) | `create_bookmark` accepted a blank title -- `bookmarks.md` requires a non-empty URL *and* title, only URL was checked | test — `test_create_rejects_blank_title`; rule — golden rule 6 (stripped-but-unvalidated field) |
 
 ## Open / deliberately unfixed
 
