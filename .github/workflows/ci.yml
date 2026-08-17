@@ -31,6 +31,13 @@ jobs:
         run: pytest -q
       - name: golden rules
         run: python scripts/check_golden_rules.py
+      - name: builder scope (agentic-build branches only)
+        # Only the Builder Routine's branches are subject to its scope guard;
+        # normal human/maintenance PRs touch files the builder may not, so this
+        # gate is scoped to agentic-build/* by branch name. Needs fetch-depth: 0
+        # (set above) to diff against origin/master.
+        if: startsWith(github.head_ref, 'agentic-build/') || startsWith(github.ref_name, 'agentic-build/')
+        run: python scripts/check_builder_scope.py --base origin/master
       - name: doc gardener (report only, non-blocking)
         continue-on-error: true
         run: python scripts/doc_gardener.py
