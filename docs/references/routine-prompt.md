@@ -42,10 +42,9 @@ version PR #25 ran against. Next scheduled fire: 2026-08-24 (Tuesday
 single standing branch, `agentic-maintenance/standing`. A merged prior
 PR means that branch's work already landed -- the next run recreates it
 fresh from `origin/master`. A still-open prior PR means the next run
-merges `origin/master` into the branch first (this run's own new work wins any conflict,
-this run's own edits are redone on top of that clean state), then adds
-its own commits to that same PR -- multiple runs' fixes can accumulate
-in one PR until a human merges it.
+merges `origin/master` into the branch first, keeping this run's own
+edits on any conflict, then adds its own commits to that same PR --
+multiple runs' fixes can accumulate in one PR until a human merges it.
 
 Changes from the pre-M13 version (already exercised, see above):
 
