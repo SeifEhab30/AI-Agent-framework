@@ -54,7 +54,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = REPO_ROOT / "src" / "todoapp"
-SPECS_DIR = REPO_ROOT / "docs" / "product-specs"
 
 FORBIDDEN_PATHS = (
     "docs/quality-score/findings-log.md",
@@ -197,16 +196,34 @@ def domain_exists_at(ref: str, domain: str) -> bool:
     return result.returncode == 0
 
 
+def read_spec_at(ref: str, domain: str) -> str | None:
+    """Reads a domain's spec as it stood at `ref`, not the working tree --
+    the Builder is now allowed to strip the readiness marker it just
+    fulfilled as part of its own PR, so authorization must be judged
+    against the pre-Builder state, never the post-edit one."""
+    result = subprocess.run(
+        ["git", "show", f"{ref}:docs/product-specs/{domain}.md"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.decode("utf-8")
+
+
 def check_target_authorized(base: str, domain: str) -> list[str]:
     """The touched domain's spec must actually carry the readiness marker --
     binds the discovery gate (builder-prompt.md's Status/[ready] convention)
     to the diff mechanically, instead of trusting the Builder's own claim
     that it picked an authorized target."""
-    spec_path = SPECS_DIR / f"{domain}.md"
-    if not spec_path.exists():
-        return [f"{domain}: no product spec found at {spec_path} -- not an authorized target"]
+    text = read_spec_at(base, domain)
+    if text is None:
+        return [
+            f"{domain}: no product spec found at {base}:docs/product-specs/{domain}.md "
+            f"-- not an authorized target"
+        ]
 
-    text = spec_path.read_text(encoding="utf-8")
     is_new = not domain_exists_at(base, domain)
 
     if is_new:
@@ -251,13 +268,13 @@ def check_traceability(base: str, domain: str) -> list[str]:
     against base) must be at least as numerous as its ready-marked spec
     requirements. Doesn't prove semantic coverage -- kills the specific
     failure of a PR's requirement-to-test table overclaiming what's tested."""
-    spec_path = SPECS_DIR / f"{domain}.md"
+    spec_text = read_spec_at(base, domain)
     test_path = REPO_ROOT / "tests" / domain / "test_service.py"
-    if not spec_path.exists() or not test_path.exists():
+    if spec_text is None or not test_path.exists():
         return []  # other checks already cover a missing spec/domain
 
     is_new = not domain_exists_at(base, domain)
-    requirement_count = count_ready_requirements(spec_path.read_text(encoding="utf-8"), is_new)
+    requirement_count = count_ready_requirements(spec_text, is_new)
     if requirement_count == 0:
         return []
 

@@ -50,6 +50,20 @@ that produced PR #31 — not yet re-synced to the live trigger, since the
 trigger still runs the version already proven; sync happens as its own
 deliberate step, not silently alongside this doc edit.
 
+**Readiness marker now cleared on success** (2026-08-18): after
+verification runs kept rediscovering already-built targets (`tags.md`'s
+contradiction and the bookmarks `[ready]` search bullet both required
+manual tracking of "already evaluated" state), the Builder's spec-edit
+permission was widened to also strip the readiness marker it just
+fulfilled — delete `Status: Ready for implementation` for a built new
+domain, strip `[ready]` from the one bullet built for an existing
+domain. `scripts/check_builder_scope.py`'s authorization and
+traceability checks were updated to read the target spec from `base`
+(pre-Builder state) rather than the working tree, so a Builder PR that
+clears its own marker doesn't fail its own scope check. An unbuilt,
+skipped-for-ambiguity spec (e.g. `tags.md`) keeps its marker untouched —
+only a successful build clears it.
+
 ## Prompt
 
 You are the Builder Routine for "AI Agent" (SeifEhab30/AI-Agent-framework) -- a second, distinct agent from the maintenance Routine (routine-prompt.md, repairs drift only). You build new features from human-authored, approved specs. Never touch the maintenance agent's territory.
@@ -75,7 +89,7 @@ Every normative spec behavior needs a named, passing test. PR description includ
 ALLOWED ACTIONS -- hard boundary, also mechanically enforced by scripts/check_builder_scope.py (run before opening any PR)
 - New domain: create all 6 layer files + tests/<domain>/test_service.py + tests/<domain>/__init__.py. Whole domain is the unit -- nothing to justify.
 - Existing domain: touch only files necessary for that one [ready] behavior; justify any extra file, per-file, in the PR.
-- Mechanical registration only: app.py (new domain's mount block, following existing blocks' exact pattern -- never reorder/edit others); pyproject.toml (append exactly 3 new [[tool.importlinter.contracts]] blocks + add the domain to the independence contract's modules list -- never edit an existing contract, only ever ADD to independence, never remove); MAP.md (only your own row); your target's own docs/product-specs/<domain>.md (only bump Verified: after implementing exactly what's written -- never change what it promises).
+- Mechanical registration only: app.py (new domain's mount block, following existing blocks' exact pattern -- never reorder/edit others); pyproject.toml (append exactly 3 new [[tool.importlinter.contracts]] blocks + add the domain to the independence contract's modules list -- never edit an existing contract, only ever ADD to independence, never remove); MAP.md (only your own row); your target's own docs/product-specs/<domain>.md (bump Verified: after implementing exactly what's written -- never change what it promises; also clear the readiness marker you just fulfilled: new-domain target -> delete the `Status: Ready for implementation` line entirely; existing-domain target -> strip the `[ready]` tag from that one bullet only, leaving its text untouched. Don't touch markers on any other bullet or domain.).
 
 FORBIDDEN ACTIONS -- never, no exceptions; check_builder_scope.py fails the PR on any of these
 - Business logic in any domain other than this run's single target.
