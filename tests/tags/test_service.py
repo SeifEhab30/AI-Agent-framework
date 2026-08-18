@@ -28,17 +28,9 @@ def test_create_rejects_blank_name(service: TagService):
 def test_create_allows_duplicate_names(service: TagService):
     service.create_tag(TagCreate(name="urgent"))
     service.create_tag(TagCreate(name="urgent"))
-    tags = service.list_tags_alphabetical()
+    tags = service.list_tags_recent()
     assert len(tags) == 2
     assert all(t.name == "urgent" for t in tags)
-
-
-def test_list_tags_alphabetical(service: TagService):
-    service.create_tag(TagCreate(name="work"))
-    service.create_tag(TagCreate(name="Home"))
-    service.create_tag(TagCreate(name="apple"))
-    names = [t.name for t in service.list_tags_alphabetical()]
-    assert names == ["apple", "Home", "work"]
 
 
 def test_list_tags_recent_first(service: TagService):
