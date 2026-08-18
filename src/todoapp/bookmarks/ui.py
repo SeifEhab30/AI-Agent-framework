@@ -24,6 +24,10 @@ def build_router(service: BookmarkService, emit_event: Callable[..., None]) -> A
         emit_event("bookmark_created", bookmark_id=bookmark.id)
         return bookmark
 
+    @router.get("/search", response_model=list[Bookmark])
+    def search_bookmarks(q: str) -> list[Bookmark]:
+        return service.search(q)
+
     @router.post("/{bookmark_id}", response_model=Bookmark)
     def rename_bookmark(bookmark_id: str, data: BookmarkUpdate) -> Bookmark:
         try:
