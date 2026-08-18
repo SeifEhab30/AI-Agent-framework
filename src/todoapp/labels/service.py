@@ -16,7 +16,7 @@ class LabelService:
         name = data.name.strip()
         if not name:
             raise ValidationError("name must not be empty")
-        if not _COLOR_PATTERN.match(data.color):
+        if not _COLOR_PATTERN.fullmatch(data.color):
             raise ValidationError("color must be in #RRGGBB hex format")
         label = Label(id=new_id(), name=name, color=data.color)
         self._repo.add(label)

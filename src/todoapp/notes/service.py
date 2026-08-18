@@ -25,6 +25,5 @@ class NoteService:
         note = self._repo.get(note_id)
         if note is None:
             raise NotFoundError(f"note {note_id} not found")
-        if body:
-            self._repo.set_body(note_id, body)
+        self._repo.set_body(note_id, body)
         return self._repo.get(note_id)

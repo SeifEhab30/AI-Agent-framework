@@ -1,6 +1,6 @@
 # Milestones
 
-Verified: 2026-08-17
+Verified: 2026-08-18
 
 Tracks progress on the Codex-style workflow scaffold, one milestone at a
 time. This is a single running log, not one file per milestone — update
@@ -350,10 +350,11 @@ routes (`/todos`, `/widgets`) verified live via curl and through the
 actual frontend UI (create + set-value on a widget, all 4 tabs render).
 
 **Note:** this work happened on an unpushed local branch, same as M12 —
-holding all pushes until after this week's cron-verification window
-(M7/M9's open item) resolves, so `master` stays untouched for that test.
+held until after that week's cron-verification window (M7/M9's open item)
+resolved, so `master` stayed untouched for that test. Since landed on
+`master`.
 
-**Status:** Complete, not yet pushed.
+**Status:** Complete.
 
 ## Backlog (unscheduled, not yet milestones)
 
