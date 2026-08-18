@@ -104,6 +104,23 @@ this phase — decision #2 of the plan that produced this prompt requires
 a human-authored, `Status: Ready for implementation`-marked spec to
 exist first, every time, in v1.
 
+**Deprecation / dead-code detection (not designed, not built).** Right
+now nothing in the harness prunes backward — the maintenance Routine
+only compares code against its *own current* spec, never asks whether
+a whole domain or feature is still wanted; the Builder can't touch any
+domain but its single target, so it can't clean up elsewhere even if it
+tried. Raised 2026-08-18: this is a real gap, not just a deferred nice-
+to-have. Sketched direction only, not designed: mirror the readiness
+gate with a `Status: Deprecated` marker a human adds to a spec, which
+would authorize an agent (the maintenance Routine, or a third,
+separate one, given the same reasoning that kept the Builder split
+from maintenance — deprecation removing code is at least as high-
+authority as the Builder creating it) to remove the corresponding
+domain/behavior and its registration. Needs real design work — what
+"remove a domain" means for existing data/migrations, how it interacts
+with golden rule 5's completeness check, whether it's a Routine mode or
+a third agent — before any of it gets built.
+
 ## Who may edit this file
 
 A human, always. The Builder must never propose changes to its own
