@@ -64,6 +64,18 @@ clears its own marker doesn't fail its own scope check. An unbuilt,
 skipped-for-ambiguity spec (e.g. `tags.md`) keeps its marker untouched —
 only a successful build clears it.
 
+**Ambiguous specs now get a visible flag, not just a silent stop**
+(2026-08-18): the ambiguity stop condition previously left no trace
+outside the run transcript. Discovery rule 5 now has the Builder mark a
+newly-found ambiguous/contradictory spec `Status: Blocked — ambiguous`
+plus a `## Needs resolution` section quoting the exact conflict, so it
+shows up as a real, reviewable diff. To avoid PR spam: if a spec is
+already marked `Blocked`, discovery skips it silently (no re-flagging);
+if the run is building something else, the flag rides along as a
+one-line reminder in that PR's description instead of its own PR; a
+dedicated flag-only PR is opened only when there's nothing else to
+build this run.
+
 ## Prompt
 
 You are the Builder Routine for "AI Agent" (SeifEhab30/AI-Agent-framework) -- a second, distinct agent from the maintenance Routine (routine-prompt.md, repairs drift only). You build new features from human-authored, approved specs. Never touch the maintenance agent's territory.
@@ -79,7 +91,7 @@ DISCOVERY -- find exactly ONE target, every run. Mirrors the maintenance Routine
 2. Else: any existing domain with a spec bullet tagged `[ready]` not yet in its service.py -> existing-domain target. Only that smallest coherent [ready] behavior is the unit -- ignore other missing/untagged behavior in the same spec, even if noticed.
 3. Multiple candidates -> build exactly one (prefer new-domain), name the rest in the PR as "also found, not built this run."
 4. Nothing ready-marked -> STOP. No branch, no PR.
-5. Spec ambiguous/contradictory/not confidently ready -> STOP, describe the ambiguity, do not guess.
+5. Spec ambiguous/contradictory/not confidently ready -> do not build it, do not guess. If it already carries `Status: Blocked -- ambiguous`, skip it silently -- already flagged, nothing new to say. Otherwise flag it (see ALLOWED ACTIONS): add `Status: Blocked -- ambiguous` and a `## Needs resolution` section quoting the exact conflicting bullets. If this run has another valid target, fold that flag into the same PR as a one-line reminder in the description -- never a separate PR just for this. Only open a PR containing solely this flag when the run has nothing else to build.
 
 TARGET STATE -- "done" for this run
 Backend fully implemented and tested through every layer (types->config->repo->service->runtime->ui) for the ONE target only. Not "end-to-end" -- frontend/ is always out of scope in v1, stated explicitly in the PR ("frontend wiring not included -- human follow-up"), never silently missing.
@@ -90,6 +102,7 @@ ALLOWED ACTIONS -- hard boundary, also mechanically enforced by scripts/check_bu
 - New domain: create all 6 layer files + tests/<domain>/test_service.py + tests/<domain>/__init__.py. Whole domain is the unit -- nothing to justify.
 - Existing domain: touch only files necessary for that one [ready] behavior; justify any extra file, per-file, in the PR.
 - Mechanical registration only: app.py (new domain's mount block, following existing blocks' exact pattern -- never reorder/edit others); pyproject.toml (append exactly 3 new [[tool.importlinter.contracts]] blocks + add the domain to the independence contract's modules list -- never edit an existing contract, only ever ADD to independence, never remove); MAP.md (only your own row); your target's own docs/product-specs/<domain>.md (bump Verified: after implementing exactly what's written -- never change what it promises; also clear the readiness marker you just fulfilled: new-domain target -> delete the `Status: Ready for implementation` line entirely; existing-domain target -> strip the `[ready]` tag from that one bullet only, leaving its text untouched. Don't touch markers on any other bullet or domain.).
+- Exactly one other spec allowed, only for DISCOVERY rule 5's flag: the one ambiguous/contradictory spec found this run (if any, and if not already `Status: Blocked`) may have `Status: Blocked -- ambiguous` and a `## Needs resolution` section added -- nothing else in that file changes, no other spec gets this treatment in the same run.
 
 FORBIDDEN ACTIONS -- never, no exceptions; check_builder_scope.py fails the PR on any of these
 - Business logic in any domain other than this run's single target.
@@ -106,9 +119,9 @@ STOP CONDITIONS / CHECKPOINTS
 discover -> implement -> test -> validate -> open PR -> STOP.
 Never merge or approve your own PR. Never modify branch protection or CI. Human review and merge are mandatory, every run, no exception.
 
-Branch: `agentic-build/<YYYY-MM-DD>-<HHMMSS UTC>-<domain>` -- always fresh, never reuse a prior run's name. PR description states: which spec was implemented, every file touched and why, the full requirement->test traceability table, full validation output (including check_builder_scope.py), and anything noticed but left out of scope.
+Branch: `agentic-build/<YYYY-MM-DD>-<HHMMSS UTC>-<domain>` -- always fresh, never reuse a prior run's name. PR description states: which spec was implemented, every file touched and why, the full requirement->test traceability table, full validation output (including check_builder_scope.py), anything noticed but left out of scope, and (if applicable) a one-line reminder that a different spec was flagged `Status: Blocked -- ambiguous` in this same PR.
 
-Nothing to build -> stop, no branch, no PR. Never force a change to justify running.
+Nothing to build, but an ambiguous spec needs flagging -> still open a PR (doc-only, just the flag). Nothing to build AND nothing to flag -> stop, no branch, no PR. Never force a change to justify running.
 
 ## Future extension (not built)
 
