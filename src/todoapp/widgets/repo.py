@@ -43,6 +43,10 @@ class WidgetRepo:
         self._conn.execute("UPDATE widgets SET value = ? WHERE id = ?", (value, widget_id))
         self._conn.commit()
 
+    def delete(self, widget_id: str) -> None:
+        self._conn.execute("DELETE FROM widgets WHERE id = ?", (widget_id,))
+        self._conn.commit()
+
     @staticmethod
     def _to_widget(row: tuple) -> Widget:
         id_, label, value, created_at = row
