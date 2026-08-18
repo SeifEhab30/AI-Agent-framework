@@ -18,6 +18,8 @@ from todoapp.notes.runtime import build_runtime as build_notes_runtime
 from todoapp.notes.ui import build_router as build_notes_router
 from todoapp.reminders.runtime import build_runtime as build_reminders_runtime
 from todoapp.reminders.ui import build_router as build_reminders_router
+from todoapp.tags.runtime import build_runtime as build_tags_runtime
+from todoapp.tags.ui import build_router as build_tags_router
 from todoapp.todos.runtime import build_runtime as build_todos_runtime
 from todoapp.todos.ui import build_router as build_todos_router
 from todoapp.widgets.runtime import build_runtime as build_widgets_runtime
@@ -54,6 +56,9 @@ def build_app() -> FastAPI:
 
     labels = build_labels_runtime()
     app.include_router(build_labels_router(labels.service, labels.providers.telemetry.event))
+
+    tags = build_tags_runtime()
+    app.include_router(build_tags_router(tags.service, tags.providers.telemetry.event))
 
     return app
 
