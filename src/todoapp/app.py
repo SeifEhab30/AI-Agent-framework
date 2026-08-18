@@ -12,6 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from todoapp.bookmarks.runtime import build_runtime as build_bookmarks_runtime
 from todoapp.bookmarks.ui import build_router as build_bookmarks_router
+from todoapp.labels.runtime import build_runtime as build_labels_runtime
+from todoapp.labels.ui import build_router as build_labels_router
 from todoapp.notes.runtime import build_runtime as build_notes_runtime
 from todoapp.notes.ui import build_router as build_notes_router
 from todoapp.reminders.runtime import build_runtime as build_reminders_runtime
@@ -49,6 +51,9 @@ def build_app() -> FastAPI:
     app.include_router(
         build_reminders_router(reminders.service, reminders.providers.telemetry.event)
     )
+
+    labels = build_labels_runtime()
+    app.include_router(build_labels_router(labels.service, labels.providers.telemetry.event))
 
     return app
 
