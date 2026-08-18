@@ -24,6 +24,10 @@ class BookmarkService:
     def list_bookmarks(self) -> list[Bookmark]:
         return self._repo.list_all()
 
+    def search(self, query: str) -> list[Bookmark]:
+        query = query.lower()
+        return [b for b in self._repo.list_all() if query in b.title.lower()]
+
     def rename(self, bookmark_id: str, title: str) -> Bookmark:
         bookmark = self._repo.get(bookmark_id)
         if bookmark is None:
