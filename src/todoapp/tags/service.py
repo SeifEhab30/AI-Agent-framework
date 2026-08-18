@@ -18,8 +18,5 @@ class TagService:
         self._repo.add(tag)
         return tag
 
-    def list_tags_alphabetical(self) -> list[Tag]:
-        return self._repo.list_by_name()
-
     def list_tags_recent(self) -> list[Tag]:
         return self._repo.list_by_created()
