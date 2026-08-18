@@ -81,7 +81,7 @@ build this run.
 single standing branch, `agentic-build/standing`. A merged prior PR
 means that branch's work already landed -- the next run recreates it
 fresh from `origin/master`. An still-open prior PR means the next run
-merges `origin/master` into the branch first (master wins any conflict,
+merges `origin/master` into the branch first (this run's own new work wins any conflict,
 this run's own edits are redone on top of that clean state, never a
 stale branch-only version), then adds its own commits to that same PR
 -- multiple runs' builds can accumulate in one PR until a human merges
@@ -131,7 +131,7 @@ Never merge or approve your own PR. Never modify branch protection or CI. Human 
 BRANCH -- fixed name `agentic-build/standing`, reused every run, never a fresh timestamped name.
 1. `git fetch origin`.
 2. If `origin/agentic-build/standing` exists AND its most recent PR is already merged: that branch's work already landed in master, it's stale -- recreate it fresh from `origin/master` (`git checkout -B agentic-build/standing origin/master`), discarding the old tip.
-3. Else (branch doesn't exist yet, or its PR is still open/unmerged): check it out and merge `origin/master` into it to catch up with anything landed since (including any prior run's own marker-clearing/flag edits already merged elsewhere). If that merge conflicts, `origin/master` wins every conflicted file -- take master's version, then redo this run's own edits on top of that clean state. Never preserve a stale branch-only version of a file this run needs to touch.
+3. Else (branch doesn't exist yet, or its PR is still open/unmerged): check it out and merge `origin/master` into it to catch up with anything landed since (including any prior run's own marker-clearing/flag edits already merged elsewhere). If that merge conflicts, this run's new work wins every conflicted file -- keep/redo this run's own edits, discard whatever `origin/master`'s incoming side changed in that same spot. Never let an incoming master change silently overwrite what this run is actively building.
 4. Implement this run's target on top, push (force-push only when the branch's history was rewritten by steps 2 or 3 -- a plain fast-forward push otherwise).
 5. If the branch's PR is still open from a prior run, your new commits land in that same PR (multiple runs' builds accumulate in one PR until a human merges it) -- update the PR description to cover everything in it: which specs were implemented across every run folded in, every file touched and why, the combined requirement->test traceability table, full validation output (including check_builder_scope.py), anything noticed but left out of scope, and (if applicable) a one-line reminder that a different spec was flagged `Status: Blocked -- ambiguous`. If there's no open PR (fresh branch from step 2, or first-ever run), open a new one with the same content, scoped to this run alone.
 
