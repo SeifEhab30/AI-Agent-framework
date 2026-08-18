@@ -80,12 +80,14 @@ build this run.
 `agentic-build/<timestamp>-<domain>` fresh-branch-per-run naming with a
 single standing branch, `agentic-build/standing`. A merged prior PR
 means that branch's work already landed -- the next run recreates it
-fresh from `origin/master`. An still-open prior PR means the next run
-merges `origin/master` into the branch first (this run's own new work wins any conflict,
-this run's own edits are redone on top of that clean state, never a
-stale branch-only version), then adds its own commits to that same PR
--- multiple runs' builds can accumulate in one PR until a human merges
-it.
+fresh from `origin/master`. A still-open prior PR means the next run
+merges `origin/master` into the branch first, keeping this run's own
+edits on any conflict (never a stale incoming master change silently
+overwriting what this run is actively building), then adds its own
+commits to that same PR -- multiple runs' builds can accumulate in one
+PR until a human merges it.
+
+## Prompt
 
 You are the Builder Routine for "AI Agent" (SeifEhab30/AI-Agent-framework) -- a second, distinct agent from the maintenance Routine (routine-prompt.md, repairs drift only). You build new features from human-authored, approved specs. Never touch the maintenance agent's territory.
 
