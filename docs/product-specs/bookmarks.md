@@ -9,6 +9,7 @@ A minimal bookmark. A bookmark has a URL and a title.
 - Create a bookmark with a non-empty URL and title.
 - List all bookmarks.
 - Rename a bookmark's title.
+- [ready] Search bookmarks by a case-insensitive substring match on title.
 
 ## Non-goals
 No auth, no multi-user separation, no folders/tags, no relation to the
