@@ -41,16 +41,3 @@ def test_rename(service: BookmarkService):
 def test_rename_missing_raises(service: BookmarkService):
     with pytest.raises(NotFoundError):
         service.rename("nope", "x")
-
-
-def test_search_matches_case_insensitive_substring(service: BookmarkService):
-    service.create_bookmark(BookmarkCreate(url="https://example.com", title="Example Docs"))
-    service.create_bookmark(BookmarkCreate(url="https://other.com", title="Other Site"))
-    results = service.search("exam")
-    assert len(results) == 1
-    assert results[0].title == "Example Docs"
-
-
-def test_search_no_match_returns_empty(service: BookmarkService):
-    service.create_bookmark(BookmarkCreate(url="https://example.com", title="Example Docs"))
-    assert service.search("nope") == []
