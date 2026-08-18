@@ -1,12 +1,12 @@
 # Notes — Product Spec
 
-Verified: 2026-08-12
+Verified: 2026-08-18
 
 ## What it does
 A minimal note. A note has a title and a body.
 
 ## Behavior
-- Create a note with a title (blank or whitespace-only titles are allowed as of this revision).
+- Create a note with a non-empty title (blank or whitespace-only titles are rejected).
 - List all notes.
 - Update a note's body.
 - Delete a note by id.
