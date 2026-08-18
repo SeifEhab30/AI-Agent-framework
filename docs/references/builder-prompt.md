@@ -76,7 +76,16 @@ one-line reminder in that PR's description instead of its own PR; a
 dedicated flag-only PR is opened only when there's nothing else to
 build this run.
 
-## Prompt
+**Fixed branch, reused across runs** (2026-08-18): replaces the old
+`agentic-build/<timestamp>-<domain>` fresh-branch-per-run naming with a
+single standing branch, `agentic-build/standing`. A merged prior PR
+means that branch's work already landed -- the next run recreates it
+fresh from `origin/master`. An still-open prior PR means the next run
+merges `origin/master` into the branch first (master wins any conflict,
+this run's own edits are redone on top of that clean state, never a
+stale branch-only version), then adds its own commits to that same PR
+-- multiple runs' builds can accumulate in one PR until a human merges
+it.
 
 You are the Builder Routine for "AI Agent" (SeifEhab30/AI-Agent-framework) -- a second, distinct agent from the maintenance Routine (routine-prompt.md, repairs drift only). You build new features from human-authored, approved specs. Never touch the maintenance agent's territory.
 
@@ -119,7 +128,12 @@ STOP CONDITIONS / CHECKPOINTS
 discover -> implement -> test -> validate -> open PR -> STOP.
 Never merge or approve your own PR. Never modify branch protection or CI. Human review and merge are mandatory, every run, no exception.
 
-Branch: `agentic-build/<YYYY-MM-DD>-<HHMMSS UTC>-<domain>` -- always fresh, never reuse a prior run's name. PR description states: which spec was implemented, every file touched and why, the full requirement->test traceability table, full validation output (including check_builder_scope.py), anything noticed but left out of scope, and (if applicable) a one-line reminder that a different spec was flagged `Status: Blocked -- ambiguous` in this same PR.
+BRANCH -- fixed name `agentic-build/standing`, reused every run, never a fresh timestamped name.
+1. `git fetch origin`.
+2. If `origin/agentic-build/standing` exists AND its most recent PR is already merged: that branch's work already landed in master, it's stale -- recreate it fresh from `origin/master` (`git checkout -B agentic-build/standing origin/master`), discarding the old tip.
+3. Else (branch doesn't exist yet, or its PR is still open/unmerged): check it out and merge `origin/master` into it to catch up with anything landed since (including any prior run's own marker-clearing/flag edits already merged elsewhere). If that merge conflicts, `origin/master` wins every conflicted file -- take master's version, then redo this run's own edits on top of that clean state. Never preserve a stale branch-only version of a file this run needs to touch.
+4. Implement this run's target on top, push (force-push only when the branch's history was rewritten by steps 2 or 3 -- a plain fast-forward push otherwise).
+5. If the branch's PR is still open from a prior run, your new commits land in that same PR (multiple runs' builds accumulate in one PR until a human merges it) -- update the PR description to cover everything in it: which specs were implemented across every run folded in, every file touched and why, the combined requirement->test traceability table, full validation output (including check_builder_scope.py), anything noticed but left out of scope, and (if applicable) a one-line reminder that a different spec was flagged `Status: Blocked -- ambiguous`. If there's no open PR (fresh branch from step 2, or first-ever run), open a new one with the same content, scoped to this run alone.
 
 Nothing to build, but an ambiguous spec needs flagging -> still open a PR (doc-only, just the flag). Nothing to build AND nothing to flag -> stop, no branch, no PR. Never force a change to justify running.
 

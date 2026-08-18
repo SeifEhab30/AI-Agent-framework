@@ -37,6 +37,16 @@ every decision rule, file boundary, and limit is unchanged from the
 version PR #25 ran against. Next scheduled fire: 2026-08-24 (Tuesday
 05:00 UTC).
 
+**Fixed branch, reused across runs** (2026-08-18): replaces the old
+`agentic-maintenance/<timestamp>` fresh-branch-per-run naming with a
+single standing branch, `agentic-maintenance/standing`. A merged prior
+PR means that branch's work already landed -- the next run recreates it
+fresh from `origin/master`. A still-open prior PR means the next run
+merges `origin/master` into the branch first (master wins any conflict,
+this run's own edits are redone on top of that clean state), then adds
+its own commits to that same PR -- multiple runs' fixes can accumulate
+in one PR until a human merges it.
+
 Changes from the pre-M13 version (already exercised, see above):
 
 1. **Domain list corrected** — old prompt said "currently widgets,
@@ -83,4 +93,13 @@ Every fix needs exactly one follow-up: a **test** (behavioral bug), a **rule** (
 
 Nothing to fix anywhere? Stop -- no branch, no PR.
 
-Otherwise, run the full suite and confirm all pass: `ruff check .`, `ruff format --check .`, `lint-imports`, `pytest -q`, `check_golden_rules.py`, `doc_gardener.py`. Commit to a new branch `agentic-maintenance/<YYYY-MM-DD>-<HHMMSS UTC>` (always fresh -- never reuse a prior run's name, even same-day), push, open a PR against master. In the PR: files changed and why, category + follow-up per issue, and anything noticed but left untouched (out of scope, or not confident it's a bug). Never push to master directly (branch-protected). Never merge your own PR -- a human always reviews, and a PR adding a golden rule always needs a human to agree to the new constraint before merging.
+Otherwise, run the full suite and confirm all pass: `ruff check .`, `ruff format --check .`, `lint-imports`, `pytest -q`, `check_golden_rules.py`, `doc_gardener.py`.
+
+BRANCH -- fixed name `agentic-maintenance/standing`, reused every run, never a fresh timestamped name.
+1. `git fetch origin`.
+2. If `origin/agentic-maintenance/standing` exists AND its most recent PR is already merged: that branch's work already landed in master, it's stale -- recreate it fresh from `origin/master` (`git checkout -B agentic-maintenance/standing origin/master`), discarding the old tip.
+3. Else (branch doesn't exist yet, or its PR is still open/unmerged): check it out and merge `origin/master` into it to catch up with anything landed since. If that merge conflicts, `origin/master` wins every conflicted file -- take master's version, then redo this run's own edits on top of that clean state. Never preserve a stale branch-only version of a file this run needs to touch.
+4. Commit this run's fix(es) on top, push (force-push only when the branch's history was rewritten by steps 2 or 3 -- a plain fast-forward push otherwise).
+5. If the branch's PR is still open from a prior run, your new commits land in that same PR (multiple runs' fixes accumulate in one PR until a human merges it) -- update the PR description to cover everything in it, not just this run's addition. If there's no open PR (fresh branch from step 2, or first-ever run), open a new one.
+
+Never push to master directly (branch-protected). Never merge your own PR -- a human always reviews, and a PR adding a golden rule always needs a human to agree to the new constraint before merging. In the PR: files changed and why, category + follow-up per issue, and anything noticed but left untouched (out of scope, or not confident it's a bug) -- for an updated PR, this covers every run folded into it, not just the latest.
