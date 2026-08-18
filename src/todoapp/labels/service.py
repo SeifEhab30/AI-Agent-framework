@@ -5,7 +5,7 @@ from todoapp.labels.types import Label, LabelCreate
 from todoapp.platform.errors import NotFoundError, ValidationError
 from todoapp.platform.ids import new_id
 
-_COLOR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{3,6}$")
+_COLOR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
 class LabelService:
