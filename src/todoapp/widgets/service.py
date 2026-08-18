@@ -27,3 +27,9 @@ class WidgetService:
             raise NotFoundError(f"widget {widget_id} not found")
         self._repo.set_value(widget_id, value)
         return self._repo.get(widget_id)
+
+    def delete_widget(self, widget_id: str) -> None:
+        widget = self._repo.get(widget_id)
+        if widget is None:
+            raise NotFoundError(f"widget {widget_id} not found")
+        self._repo.delete(widget_id)

@@ -31,6 +31,13 @@ def build_router(service: WidgetService, emit_event: Callable[..., None]) -> API
         except NotFoundError as e:
             raise HTTPException(status_code=404, detail=str(e)) from e
 
+    @router.delete("/{widget_id}", status_code=204)
+    def delete_widget(widget_id: str) -> None:
+        try:
+            service.delete_widget(widget_id)
+        except NotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+
     return router
 
 
