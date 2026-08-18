@@ -37,6 +37,11 @@ def test_create_rejects_short_hex_color(service: LabelService):
         service.create_label(LabelCreate(name="urgent", color="#FFF"))
 
 
+def test_create_rejects_color_with_trailing_newline(service: LabelService):
+    with pytest.raises(ValidationError):
+        service.create_label(LabelCreate(name="urgent", color="#FF0000\n"))
+
+
 def test_delete_removes_label(service: LabelService):
     label = service.create_label(LabelCreate(name="urgent", color="#FF0000"))
     service.delete_label(label.id)

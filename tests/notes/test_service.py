@@ -36,3 +36,9 @@ def test_update_body(service: NoteService):
 def test_update_missing_raises(service: NoteService):
     with pytest.raises(NotFoundError):
         service.update_body("nope", "x")
+
+
+def test_update_body_can_clear_to_empty(service: NoteService):
+    note = service.create_note(NoteCreate(title="groceries", body="milk"))
+    updated = service.update_body(note.id, "")
+    assert updated.body == ""

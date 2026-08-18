@@ -16,6 +16,12 @@ must be blank-checked (`if not <name>: raise ...`) somewhere in the same
 function. Stripping only makes sense if the result is then validated --
 a stripped-but-unchecked field is exactly how a required-field check goes
 missing without any test or lint catching it.
+Rule 7: in service.py, a repo write must not be gated behind
+`if <param>:` where `<param>` is the same bare parameter being written,
+with no `else` branch. Testing truthiness this way silently drops
+legitimate falsy values (0, "", False) instead of writing them -- this
+exact shape caused two separate bugs (widgets' `set_value` treating 0 as
+"no update", notes' `update_body` treating "" as "no update").
 
 Usage: python scripts/check_golden_rules.py
 """
@@ -164,6 +170,43 @@ def check_unvalidated_stripped_fields(path: Path) -> list[str]:
     return issues
 
 
+def check_falsy_guarded_repo_write(path: Path) -> list[str]:
+    """Rule 7: a repo write must not be gated on the bare truthiness of the
+    same value it writes -- that silently drops legitimate falsy values."""
+    issues = []
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        params = {arg.arg for arg in node.args.args if arg.arg != "self"}
+        for stmt in node.body:
+            if not isinstance(stmt, ast.If) or stmt.orelse:
+                continue
+            test = stmt.test
+            if not isinstance(test, ast.Name) or test.id not in params:
+                continue
+            guarded_name = test.id
+            for inner in ast.walk(stmt):
+                if not (
+                    isinstance(inner, ast.Call)
+                    and isinstance(inner.func, ast.Attribute)
+                    and isinstance(inner.func.value, ast.Attribute)
+                    and isinstance(inner.func.value.value, ast.Name)
+                    and inner.func.value.value.id == "self"
+                    and inner.func.value.attr == "_repo"
+                ):
+                    continue
+                arg_names = {a.id for a in inner.args if isinstance(a, ast.Name)}
+                if guarded_name in arg_names:
+                    issues.append(
+                        f"{path.relative_to(REPO_ROOT)}:{stmt.lineno}: "
+                        f"repo write gated on 'if {guarded_name}:' with no else -- "
+                        f'a falsy-but-valid value (0, "", False) would silently '
+                        f"skip the write instead of being saved"
+                    )
+    return issues
+
+
 def discover_domains() -> tuple[list[str], list[str]]:
     """Find domain folders. Returns (complete domains, issues for partial ones)."""
     domains, issues = [], []
@@ -266,6 +309,7 @@ def main() -> int:
         issues.extend(check_no_print(path))
         if path.name == "service.py":
             issues.extend(check_unvalidated_stripped_fields(path))
+            issues.extend(check_falsy_guarded_repo_write(path))
 
     issues.extend(check_domain_registration())
 
