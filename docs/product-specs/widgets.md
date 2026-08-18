@@ -1,6 +1,6 @@
 # Widgets — Product Spec
 
-Verified: 2026-08-17
+Verified: 2026-08-18
 
 ## What it does
 A minimal dashboard widget: a labeled numeric value (e.g. a counter or
@@ -12,7 +12,7 @@ stat tile), distinct from the `todos` domain (which used to be called
   to 0 if omitted).
 - List all widgets.
 - Set a widget's value to a new number.
-- [ready] Delete a widget by id.
+- Delete a widget by id.
 
 ## Non-goals
 No auth, no multi-user separation, no charts/history of past values, no

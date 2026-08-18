@@ -47,3 +47,14 @@ def test_set_value_to_zero(service: WidgetService):
     widget = service.create_widget(WidgetCreate(label="Signups today", value=42))
     updated = service.set_value(widget.id, 0)
     assert updated.value == 0
+
+
+def test_delete_widget(service: WidgetService):
+    widget = service.create_widget(WidgetCreate(label="Signups today", value=42))
+    service.delete_widget(widget.id)
+    assert service.list_widgets() == []
+
+
+def test_delete_widget_missing_raises(service: WidgetService):
+    with pytest.raises(NotFoundError):
+        service.delete_widget("nope")
