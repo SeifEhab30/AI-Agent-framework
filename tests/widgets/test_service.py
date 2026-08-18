@@ -41,3 +41,9 @@ def test_set_value(service: WidgetService):
 def test_set_value_missing_raises(service: WidgetService):
     with pytest.raises(NotFoundError):
         service.set_value("nope", 1)
+
+
+def test_set_value_to_zero(service: WidgetService):
+    widget = service.create_widget(WidgetCreate(label="Signups today", value=42))
+    updated = service.set_value(widget.id, 0)
+    assert updated.value == 0

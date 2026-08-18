@@ -20,4 +20,4 @@ relation to the other three domains. Fourth domain, added to prove the
 layering/providers pattern holds at four domains and to give "widget" its
 actual meaning in this app.
 
-See also [design notes](docs/design-docs/0002-widgets-value-semantics.md) for background.
+See also design notes for background.
