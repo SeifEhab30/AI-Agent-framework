@@ -42,7 +42,7 @@ version PR #25 ran against. Next scheduled fire: 2026-08-24 (Tuesday
 single standing branch, `agentic-maintenance/standing`. A merged prior
 PR means that branch's work already landed -- the next run recreates it
 fresh from `origin/master`. A still-open prior PR means the next run
-merges `origin/master` into the branch first (master wins any conflict,
+merges `origin/master` into the branch first (this run's own new work wins any conflict,
 this run's own edits are redone on top of that clean state), then adds
 its own commits to that same PR -- multiple runs' fixes can accumulate
 in one PR until a human merges it.
@@ -98,7 +98,7 @@ Otherwise, run the full suite and confirm all pass: `ruff check .`, `ruff format
 BRANCH -- fixed name `agentic-maintenance/standing`, reused every run, never a fresh timestamped name.
 1. `git fetch origin`.
 2. If `origin/agentic-maintenance/standing` exists AND its most recent PR is already merged: that branch's work already landed in master, it's stale -- recreate it fresh from `origin/master` (`git checkout -B agentic-maintenance/standing origin/master`), discarding the old tip.
-3. Else (branch doesn't exist yet, or its PR is still open/unmerged): check it out and merge `origin/master` into it to catch up with anything landed since. If that merge conflicts, `origin/master` wins every conflicted file -- take master's version, then redo this run's own edits on top of that clean state. Never preserve a stale branch-only version of a file this run needs to touch.
+3. Else (branch doesn't exist yet, or its PR is still open/unmerged): check it out and merge `origin/master` into it to catch up with anything landed since. If that merge conflicts, this run's new work wins every conflicted file -- keep/redo this run's own edits, discard whatever `origin/master`'s incoming side changed in that same spot. Never let an incoming master change silently overwrite what this run is actively building.
 4. Commit this run's fix(es) on top, push (force-push only when the branch's history was rewritten by steps 2 or 3 -- a plain fast-forward push otherwise).
 5. If the branch's PR is still open from a prior run, your new commits land in that same PR (multiple runs' fixes accumulate in one PR until a human merges it) -- update the PR description to cover everything in it, not just this run's addition. If there's no open PR (fresh branch from step 2, or first-ever run), open a new one.
 
