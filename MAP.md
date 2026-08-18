@@ -75,6 +75,7 @@ top-level concern. See README.md for dev setup.
 | widgets   | [docs/product-specs/widgets.md](docs/product-specs/widgets.md)     |
 | reminders | [docs/product-specs/reminders.md](docs/product-specs/reminders.md) |
 | labels    | [docs/product-specs/labels.md](docs/product-specs/labels.md)       |
+| tags      | [docs/product-specs/tags.md](docs/product-specs/tags.md)           |
 
 ## Progress
 
