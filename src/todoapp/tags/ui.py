@@ -11,10 +11,6 @@ from todoapp.tags.types import Tag, TagCreate
 def build_router(service: TagService, emit_event: Callable[..., None]) -> APIRouter:
     router = APIRouter(prefix="/tags", tags=["tags"])
 
-    @router.get("", response_model=list[Tag])
-    def list_tags() -> list[Tag]:
-        return service.list_tags_alphabetical()
-
     @router.get("/recent", response_model=list[Tag])
     def list_tags_recent() -> list[Tag]:
         return service.list_tags_recent()

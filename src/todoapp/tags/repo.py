@@ -25,12 +25,6 @@ class TagRepo:
         )
         self._conn.commit()
 
-    def list_by_name(self) -> list[Tag]:
-        rows = self._conn.execute(
-            "SELECT id, name, created_at FROM tags ORDER BY name COLLATE NOCASE"
-        ).fetchall()
-        return [self._to_tag(row) for row in rows]
-
     def list_by_created(self) -> list[Tag]:
         rows = self._conn.execute(
             "SELECT id, name, created_at FROM tags ORDER BY created_at DESC"
