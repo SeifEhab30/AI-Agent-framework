@@ -24,6 +24,10 @@ def build_router(service: LabelService, emit_event: Callable[..., None]) -> APIR
         emit_event("label_created", label_id=label.id)
         return label
 
+    @router.get("/search", response_model=list[Label])
+    def search_labels(q: str) -> list[Label]:
+        return service.search(q)
+
     @router.delete("/{label_id}", status_code=204)
     def delete_label(label_id: str) -> None:
         try:

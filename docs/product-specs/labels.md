@@ -1,6 +1,6 @@
 # Labels — Product Spec
 
-Verified: 2026-08-18
+Verified: 2026-08-19
 Status: Ready for implementation
 
 ## What it does
@@ -13,7 +13,7 @@ themselves).
   format (reject anything else).
 - List all labels.
 - Delete a label by id.
-- [ready] Search labels by a case-insensitive substring match on name.
+- Search labels by a case-insensitive substring match on name.
 
 ## Non-goals
 No auth, no multi-user separation, no attaching labels to other domains'

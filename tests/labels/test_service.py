@@ -51,3 +51,16 @@ def test_delete_removes_label(service: LabelService):
 def test_delete_missing_raises(service: LabelService):
     with pytest.raises(NotFoundError):
         service.delete_label("nope")
+
+
+def test_search_matches_case_insensitive_substring(service: LabelService):
+    service.create_label(LabelCreate(name="Urgent Work", color="#FF0000"))
+    service.create_label(LabelCreate(name="Personal", color="#00FF00"))
+    results = service.search("URG")
+    assert len(results) == 1
+    assert results[0].name == "Urgent Work"
+
+
+def test_search_no_match_returns_empty(service: LabelService):
+    service.create_label(LabelCreate(name="Urgent Work", color="#FF0000"))
+    assert service.search("nope") == []
