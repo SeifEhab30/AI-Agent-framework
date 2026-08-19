@@ -61,6 +61,14 @@ Items 2–4 widen what the agent may touch. The scope guard is the
 mechanism that made the M10 test pass, so the widenings are enumerated
 explicitly rather than granted as general latitude.
 
+**Readiness-marker skip added** (2026-08-19): this prompt had no concept
+of the Builder Routine's `[ready]`/`Status: Ready for implementation`
+convention, so step 2 could -- and once did for real (bookmarks search,
+PR #37, before the Builder ever got to it) -- accidentally build a
+Builder-territory feature that happened to fit the service.py+
+test_service.py boundary. Step 2 now explicitly skips any bullet/spec
+carrying either marker, full stop, regardless of scope fit.
+
 ---
 
 ## Prompt
@@ -75,7 +83,8 @@ Do ALL of the following:
 
 1. Run `doc_gardener.py` and `check_golden_rules.py`. Fix each finding, strictly scoped to the exact file(s) it flagged.
 
-2. Code-health review: for each domain under src/todoapp/ (currently todos, notes, bookmarks, widgets), compare docs/product-specs/<domain>.md against src/todoapp/<domain>/service.py. On a real discrepancy, decide which side is wrong:
+2. Code-health review: for each domain under src/todoapp/ (currently todos, notes, bookmarks, widgets, reminders, labels, tags), compare docs/product-specs/<domain>.md against src/todoapp/<domain>/service.py. On a real discrepancy, decide which side is wrong:
+   - **Bullet tagged `[ready]`, or spec carries `Status: Ready for implementation`?** That's the Builder Routine's territory, not yours -- skip it entirely, even if the gap would otherwise fit your service.py+test_service.py scope. Don't report it either; it's not a maintenance finding, it's a Builder discovery target.
    - **Spec right, code wrong:** if fixable entirely within that domain's service.py + test_service.py (see SCOPE GUARD), write a failing test in tests/<domain>/test_service.py, then fix service.py so it passes. If it needs any other file, touch neither -- describe the discrepancy and the files it would require in the PR instead.
    - **Code right, spec stale:** correct the prose in that domain's product-spec doc and bump its `Verified:` date. One file, one domain. Not confident which side is wrong? Touch neither -- describe it and let a human decide.
 
