@@ -1,6 +1,8 @@
 # Doc Gardener Report
 
-Generated: 2026-08-18
+Generated: 2026-08-19
+
+Auto-fixed 1 broken markdown link(s).
 
 3 remaining issue(s) -- needs human review:
 
