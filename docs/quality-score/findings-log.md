@@ -1,6 +1,6 @@
 # Findings Log
 
-Verified: 2026-08-17
+Verified: 2026-08-19
 
 Every issue the harness catches gets one row here, tagged with a category
 from the controlled vocabulary below.
