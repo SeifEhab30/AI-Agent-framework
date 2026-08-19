@@ -19,3 +19,5 @@ No auth, no multi-user separation, no attaching labels to other domains'
 records yet, no relation to the other five domains. Sixth domain, a
 clean unambiguous spec for exercising the Builder Routine's new-domain
 path a second time.
+
+See also [color palette notes](docs/design-docs/0003-labels-color-palette.md) for background.
