@@ -1,6 +1,6 @@
 # Tags — Product Spec
 
-Verified: 2026-08-18
+Verified: 2026-08-19
 
 ## What it does
 A minimal tag: a short name attached to nothing in particular yet.
@@ -9,8 +9,8 @@ A minimal tag: a short name attached to nothing in particular yet.
 - Create a tag with a name.
 - Duplicate tag names are allowed, since the same name can mean
   different things in different contexts.
-- List all tags, in creation order, since that's more useful for
-  recent-first display.
+- List all tags, most-recently-created first, since that's more useful
+  for recent-first display.
 
 ## Non-goals
 No auth, no multi-user separation, no relation to the other domains.
