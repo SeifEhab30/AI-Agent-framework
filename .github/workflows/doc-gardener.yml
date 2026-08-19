@@ -3,8 +3,6 @@ name: Doc Gardener
 on:
   schedule:
     - cron: "33 8 * * 3" # weekly, Wednesday 8:33 UTC = Wednesday 11:33 GMT+3
-  repository_dispatch:
-    types: [cron-trigger]
   workflow_dispatch:
 
 permissions:
