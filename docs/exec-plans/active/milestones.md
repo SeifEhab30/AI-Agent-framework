@@ -1,6 +1,6 @@
 # Milestones
 
-Verified: 2026-08-18
+Verified: 2026-08-19
 
 Tracks progress on the Codex-style workflow scaffold, one milestone at a
 time. This is a single running log, not one file per milestone — update
@@ -222,7 +222,7 @@ confirmed working end-to-end via manual trigger and a real merged PR.
 Weekly schedule trigger (Monday 13:00 GMT+3) itself remains unverified,
 same caveat as M7's cron.
 
-## M10 — Behavioral bug detection + scope guard (in progress)
+## M10 — Behavioral bug detection + scope guard (done)
 
 **Goal:** M9 proved the loop can act on doc-gardener/golden-rules
 findings — pattern matches, not judgment. An external assessment pointed
@@ -268,9 +268,18 @@ the routine's allowed scope. Tests whether it recognizes this and
 reports instead of attempting a broken partial implementation confined
 to service.py.
 
-**Status:** Both test faults (behavioral bug, scope-boundary feature
-gap) live on master. Awaiting the routine's next run(s) to see what it
-produces for each.
+Routine's next run resolved both: correctly found the `toggle_done`
+behavioral bug (spec said toggle, code always set `True`), wrote a
+failing test, fixed it, and separately recognized the notes.md
+missing-delete promise needed `repo.py`/`ui.py` changes outside its
+`service.py`+`test_service.py` scope guard — reported it in the PR
+instead of attempting a broken partial fix, exactly the discipline the
+test was designed to check.
+
+**Status:** Complete. Both test faults resolved correctly by the
+routine: the fixable bug was fixed with a proving test, the
+out-of-scope feature gap was honestly declined rather than
+partially/incorrectly patched.
 
 ## M11 — React frontend (done)
 
@@ -356,7 +365,223 @@ resolved, so `master` stayed untouched for that test. Since landed on
 
 **Status:** Complete.
 
+## M14 — Tier-3 recurrence proof (done)
+
+**Goal:** M10 proved the routine can find and correctly scope a real
+behavioral bug. What was never tested: the recurrence rule itself — that
+a defect *category*'s second occurrence produces a proposed golden rule,
+not just another point fix. A one-off fix proves detection; a proposed
+rule proves the loop actually learns from repetition, not just repairs
+each instance in isolation.
+
+Planted a second occurrence of the `behavior-spec-mismatch` category (the
+same category `toggle_done` in M10 belonged to) as a fresh, different
+bug, and fired the routine. It correctly:
+- found the planted defect via its own spec-vs-code comparison
+- wrote a failing test proving the defect, then fixed the implementation
+- checked `findings-log.md`, recognized this was the category's second
+  logged occurrence
+- proposed golden rule 6 in the same PR, verified it passes clean on the
+  fixed repo and actually fails when the defect is reintroduced (stated
+  both in the PR, same discipline required by the routine's own prompt)
+
+PR #25 — proposed rule reviewed and merged by a human.
+
+**Status:** Complete. Full loop (detect → fix → recognize recurrence →
+propose a new mechanical check → prove it catches the target defect)
+confirmed working end-to-end, not just designed.
+
+## M15 — Builder Routine (feature development, not maintenance) (done)
+
+**Goal:** every milestone so far proved the maintenance Routine can
+*preserve* what exists — find drift, fix it, decline what's out of
+scope. Nothing yet proved an agent could *build* something new. Close
+that gap with a second, fully separate agent, deliberately not a mode
+switch on the proven maintenance Routine, so a bug in the far
+less-proven builder can never contaminate maintenance's earned trust.
+
+**Design, reviewed against three external assessments before building:**
+- `docs/references/builder-prompt.md` — mirrors `routine-prompt.md`'s
+  structure (Verified date, Status section, versioned Prompt body).
+  Phase 1 only: the human always writes the spec first
+  (`docs/product-specs/<domain>.md`, `Status: Ready for implementation`
+  for a new domain, `[ready]`-tagged bullet for an existing one); the
+  Builder never authors a spec itself in v1.
+- **Discovery**: new-domain candidates preferred over existing-domain;
+  exactly one target built per run; multiple candidates named as "also
+  found, not built" in the PR; nothing ready-marked or spec genuinely
+  ambiguous → stop, no branch, no PR.
+- **Scope**: full six-layer authority (types→config→repo→service→
+  runtime→ui) for its one target only — a materially larger grant than
+  maintenance's `service.py`-only boundary, which is exactly why it's a
+  separate agent and separate trust model.
+- **Traceability**: every spec requirement needs a named, passing test;
+  PR description includes a requirement→test table.
+- **`scripts/check_builder_scope.py`** — the scope guard isn't just a
+  prompt promise. Structural checks (via `tomllib`, same technique
+  `check_golden_rules.py` already used) that `pyproject.toml` contracts
+  are only ever appended/superset-extended, never edited; a set-based
+  domain-touch count (more than one domain directory per run fails);
+  forbidden-path list covering maintenance's own territory and the
+  script's own file. Wired into CI on any `agentic-build/*` branch, not
+  just self-reported by the Builder.
+- New `RemoteTrigger` (`trig_01H6QZXRUi4S2zdY2X9R2ZPy`), manual
+  `action=run` only, no cron — same "prove it by hand before trusting a
+  schedule" bar M9 cleared before its own cron was trusted.
+
+**First real run (2026-08-17):** target spec `docs/product-specs/reminders.md`
+(message + future-dated `due_at`, list, mark-done, delete) — a genuinely
+new domain, human-written, not scripted for the Builder. Discovery
+correctly found it as the sole ready-marked target. Built all six
+layers, 8 tests covering all 4 spec behaviors, zero scope violations
+(`check_builder_scope.py` clean), honest PR (frontend explicitly named
+as out of scope, not silently missing). Merged as PR #31.
+
+**Real gap found in human review, not by any mechanical gate:** a
+naive-vs-aware `datetime` comparison — a `due_at` submitted without a
+UTC offset would crash with `TypeError` instead of the intended
+`ValidationError`. No golden rule or scope check could have caught
+this; it required an actual human reading the logic. Fixed in a
+follow-up commit on the same PR, validating the plan's own stated
+residual-gap philosophy: mechanical gates catch structural violations,
+not every logic bug.
+
+**Negative-capability checklist** (per the plan's own bar, mirroring
+M10's out-of-scope-decline test): confirmed via the actual PR #31 diff,
+not just trusted — no existing domain's business logic touched,
+`routine-prompt.md`/`findings-log.md`/`check_golden_rules.py`/
+`doc_gardener.py` untouched, `frontend/` untouched, no import-linter
+contract modified (only appended), target spec's *requirements*
+unchanged (only `Verified:` bumped), not self-merged/self-approved,
+every spec bullet had a named covering test.
+
+Both prompts (`routine-prompt.md`, `builder-prompt.md`) later
+token-trimmed (~22-28%) with word-for-word instruction/permission
+equivalence verified before syncing to the live triggers (PR #32).
+
+**Status:** Complete. Full arc (design → mechanical scope guard → first
+real build on an unscripted human spec → real bug found and fixed in
+review → negative-capability verified against the actual diff) proven,
+not just planned.
+
+## M16 — Standing branches, marker-clearing, visible ambiguity flagging (done)
+
+**Goal:** both routines previously created a fresh, uniquely-timestamped
+branch every single run (`agentic-maintenance/<timestamp>`,
+`agentic-build/<timestamp>-<domain>`) and re-evaluated every spec/marker
+from scratch each time. Three real, user-identified gaps this produced:
+manual PR-by-PR review overhead scaling with every run; already-built
+Builder targets (and already-resolved ambiguous specs) getting
+silently rediscovered every run with no memory of prior evaluation; and
+an ambiguous/contradictory spec's stop condition leaving zero trace
+outside the run transcript, discoverable only by reading a log a human
+had to think to go check.
+
+**Standing branches:** replaced per-run branch names with one fixed
+branch per routine (`agentic-maintenance/standing`,
+`agentic-build/standing`). A run whose branch's prior PR is already
+merged recreates it fresh from `origin/master`; a run whose branch still
+has an open PR merges `origin/master` in first (**this run's own new
+work wins any conflict** — corrected mid-session after an initial draft
+had the direction backwards) and adds its commits to that same PR,
+rewriting the PR description to cover every run folded into it, rather
+than opening a new PR each time.
+
+**Builder marker-clearing:** after a successful build, the Builder now
+deletes `Status: Ready for implementation` (new domain) or strips
+`[ready]` from the one bullet it built (existing domain) as part of its
+own PR. Required a companion fix in `check_builder_scope.py`
+(`check_target_authorized`/`check_traceability` now read the target
+spec from `base`/origin-master via a new `read_spec_at()` helper, not
+the working tree) — otherwise the Builder clearing its own marker would
+fail its own scope check on its own PR.
+
+**Visible ambiguity flagging:** an ambiguous/contradictory spec now
+gets marked `Status: Blocked -- ambiguous` plus a `## Needs resolution`
+section quoting the exact conflict — a real, reviewable diff instead of
+a buried transcript line. Deduped: an already-`Blocked` spec is skipped
+silently on later runs; if the run built something else, the flag rides
+along as a one-line PR-description reminder rather than its own PR; a
+dedicated flag-only PR only fires when there's nothing else to build.
+
+**Real gap found live, fixed same-day:** after `tags.md`'s direct-negation
+uniqueness contradiction was resolved by a human, the remaining
+list-order contradiction ("alphabetical" vs. "creation order,
+recent-first" — two bullets about the *same* operation, not literal
+opposites) wasn't caught by the original ambiguity rule. The Builder
+built both as separate methods and silently guessed "recent-first"
+meant descending order (PR #41) instead of flagging the conflict.
+Discovery rule 5 tightened to explicitly cover same-operation conflicts,
+not just direct negations, and to explicitly forbid resolving ambiguity
+by building every reading as a separate method or guessing an unclear
+phrase's meaning. `tags.md` itself fixed for real afterward (PR #44):
+creation-order listing only, alphabetical removed from both code and
+spec.
+
+**Proven live, not just designed** — each routine fired twice in
+sequence against real, deliberately staged fixtures:
+- Builder run 1: correctly built the sole valid target (widgets
+  delete-by-id, tagged `[ready]` for the test) on a freshly created
+  `agentic-build/standing`, PR #49.
+- Builder run 2 (before #49 was merged): correctly found nothing new to
+  build — every other candidate was either stale-but-already-built or
+  the genuinely ambiguous `tags.md` — made zero commits, stayed silent,
+  left PR #49 untouched. Confirms the "quiet when nothing found" path
+  and a no-op branch merge.
+- Maintenance run 1: found and fixed a planted falsy-guard bug in
+  `notes/service.py` (`update_body` no-opped on an empty-string body,
+  same shape as an earlier widgets bug) on a freshly created
+  `agentic-maintenance/standing`; recognized the recurrence and proposed
+  golden rule 7 (`check_falsy_guarded_repo_write`), verified it catches
+  both the notes and widgets defect shapes. PR #50.
+- Maintenance run 2 (before #50 was merged): found genuinely new,
+  unplanted work (`doc_gardener.py` staleness on `milestones.md`/
+  `conventions.md`, this time run with full git history) — added a
+  second commit to the same branch, fast-forward pushed, and rewrote PR
+  #50's description to summarize both runs together. This is the proof
+  that was missing before this milestone: accumulation onto an
+  already-open PR confirmed actually working, not just designed.
+
+**Also fixed:** a real bug introduced mid-session — an earlier edit had
+accidentally deleted the `## Prompt` section header from
+`builder-prompt.md`; caught before syncing to the live trigger (PR #47).
+Both triggers re-synced to the final, merged prompt content afterward.
+
+Separately verified the repo's non-agentic `doc_gardener.yml` GitHub
+Actions cron (distinct from both Routines — no agent involved, just
+`python scripts/doc_gardener.py --fix` on a schedule): planted a dead
+markdown link, confirmed the scheduled run (which itself fired ~30
+minutes after its exact cron time, a live demonstration of GitHub's
+documented best-effort scheduling) correctly auto-fixed it.
+
+**Status:** Complete. Both routines' redesigned branch/marker/ambiguity
+mechanics confirmed working end-to-end via real, repeated fires against
+real fixtures — not just code review of the new prompt/script logic.
+
+## Known, real, unaddressed gaps (not yet a scheduled milestone)
+
+- **Maintenance has no concept of the `[ready]`/`Status:` readiness-marker
+  convention at all** (that's Builder-only) — it can and has accidentally
+  built small Builder-territory features that happen to fit its narrow
+  `service.py`+`test_service.py` boundary (observed for real: it built
+  bookmarks search before the Builder ever got to it, PR #37). Not
+  designed or fixed.
+- **`notes.md` promises "Delete a note by id."**, genuinely unimplemented
+  anywhere. Maintenance can detect this (spec-vs-code review covers every
+  domain) but can't fix it (needs `repo.py`, out of its scope, so it'd
+  only report it). The Builder can't even see it, since discovery only
+  considers `[ready]`-tagged bullets and this one isn't tagged.
+  Deliberately left untagged — hold until one of the routines is
+  naturally capable of resolving it, don't manually unlock it.
+- **Deprecation/dead-code detection** — sketched only, in
+  `builder-prompt.md`'s "Future extension" section. Not designed or
+  built.
+- **Prompt generalization beyond this one repo** — both prompts are
+  tightly coupled to this repo's exact paths, package name, and tooling.
+  Deferred until a second real project actually adopts the framework.
+
 ## Backlog (unscheduled, not yet milestones)
 
-(none — all four original practices, CI/branch-protection hardening, and
-the agentic maintenance loop are now built and verified)
+(none — all four original practices, CI/branch-protection hardening, the
+agentic maintenance loop, and the Builder Routine are now built and
+verified; see the gaps list above for what's genuinely still open)
