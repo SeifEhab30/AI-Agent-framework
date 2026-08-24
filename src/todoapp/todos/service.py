@@ -25,5 +25,5 @@ class TodoService:
         todo = self._repo.get(todo_id)
         if todo is None:
             raise NotFoundError(f"todo {todo_id} not found")
-        self._repo.set_done(todo_id, not todo.done)
+        self._repo.set_done(todo_id, True)
         return self._repo.get(todo_id)
