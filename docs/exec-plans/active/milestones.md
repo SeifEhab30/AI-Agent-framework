@@ -1,6 +1,6 @@
 # Milestones
 
-Verified: 2026-08-18
+Verified: 2026-08-24
 
 Tracks progress on the Codex-style workflow scaffold, one milestone at a
 time. This is a single running log, not one file per milestone — update
@@ -268,9 +268,14 @@ the routine's allowed scope. Tests whether it recognizes this and
 reports instead of attempting a broken partial implementation confined
 to service.py.
 
-**Status:** Both test faults (behavioral bug, scope-boundary feature
-gap) live on master. Awaiting the routine's next run(s) to see what it
-produces for each.
+**Status:** Resolved for the behavioral bug -- the maintenance Routine
+found and fixed the `toggle_done` fault (`findings-log.md`,
+2026-08-12 entry: `test_toggle_done_flips_back_off`), confirmed still
+correct in the current `todos/service.py`. The scope-boundary feature
+gap (notes delete-note) is deliberately still live on master -- see
+`findings-log.md`'s "Open / deliberately unfixed" table -- as a
+standing fixture proving the Routine reports rather than half-implements
+a fix that needs `repo.py`.
 
 ## M11 — React frontend (done)
 

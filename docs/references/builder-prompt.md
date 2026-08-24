@@ -1,6 +1,6 @@
 # Builder Routine — standing prompt
 
-Verified: 2026-08-17
+Verified: 2026-08-24
 
 This file is the **source of truth** for the Builder Routine's
 instructions — a second, separate scheduled agent from the maintenance
@@ -40,6 +40,14 @@ mechanical gates couldn't catch — a naive-vs-aware datetime comparison
 that would crash on a `due_at` submitted without a UTC offset — fixed
 in a follow-up commit on the same PR (see `findings-log.md` once
 recorded, and `milestones.md` M15).
+
+**Proven repeatedly since** (as of 2026-08-24): further manual runs built
+the `labels` domain (PR #36) and the `tags` domain (PR #41), then
+extended existing domains from later-approved `[ready]` bullets --
+bookmarks search (PR #39) and labels search (PR #65) -- each still a
+single-target run per the discovery rule, each opening its own PR for
+human review. Cadence (manual-only vs. a cron) is unchanged from the
+paragraph above; that decision hasn't been revisited since.
 
 **Prompt below is trimmed for token efficiency** (2026-08-17, after the
 first run): compresses the STARTING STATE/ALLOWED ACTIONS registration
