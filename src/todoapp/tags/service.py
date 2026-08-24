@@ -20,3 +20,7 @@ class TagService:
 
     def list_tags_recent(self) -> list[Tag]:
         return self._repo.list_by_created()
+
+    def search(self, query: str) -> list[Tag]:
+        query = query.lower()
+        return [tag for tag in self._repo.list_by_created() if query in tag.name.lower()]

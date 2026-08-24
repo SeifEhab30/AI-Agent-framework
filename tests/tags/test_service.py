@@ -39,3 +39,16 @@ def test_list_tags_recent_first(service: TagService):
     ids = [t.id for t in service.list_tags_recent()]
     assert ids[0] == second.id
     assert ids[-1] == first.id
+
+
+def test_search_matches_case_insensitive_substring(service: TagService):
+    service.create_tag(TagCreate(name="Urgent"))
+    service.create_tag(TagCreate(name="Later"))
+    results = service.search("URG")
+    assert len(results) == 1
+    assert results[0].name == "Urgent"
+
+
+def test_search_no_match_returns_empty(service: TagService):
+    service.create_tag(TagCreate(name="Urgent"))
+    assert service.search("nope") == []
