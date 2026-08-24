@@ -129,13 +129,14 @@ candidate signal (item 2b) that runs `doc_gardener.py` itself, after
 unshallowing -- see CANDIDATE CHECKS below. `routine-prompt.md` needs
 the same unshallow fix in its own step 1, tracked separately.
 
-**Builder candidate check widened for the new frontend-only target**
-(2026-08-24): `builder-prompt.md` gained a third discovery mode --
+**Builder candidate check widened for the new frontend targets**
+(2026-08-24): `builder-prompt.md` gained two new discovery modes --
 `Frontend: Ready for implementation` on an already-backend-complete
-domain missing its frontend entirely (PR #72). Item 1 below now checks
-for that marker too, alongside the existing `Status: Ready`/`[ready]`
-checks, so the dispatcher can actually fire Builder for this new target
-type instead of silently missing it.
+domain missing its frontend entirely, and `Frontend: Needs update` on a
+domain whose existing frontend has fallen behind its backend (PR #72).
+Item 1 below now checks for both markers too, alongside the existing
+`Status: Ready`/`[ready]` checks, so the dispatcher can actually fire
+Builder for either target type instead of silently missing them.
 
 **Credential handling, important:** this repo is public. No real secret
 value may ever be committed here or anywhere in this file. The two fire
@@ -155,7 +156,7 @@ STARTING STATE
 - No pre-installed venv, and you don't need one for most checks below -- they're git/grep operations. The one exception is `scripts/doc_gardener.py` (candidate check 2b) -- it's pure standard library, no pip install needed, just run it with plain `python3`.
 
 CANDIDATE CHECKS -- run both, independently, every time
-1. Builder candidate: `git grep` docs/product-specs/*.md for `Status: Ready for implementation` with no matching src/todoapp/<name>/ directory (new-domain target), or `Frontend: Ready for implementation` where src/todoapp/<name>/ already exists but frontend/src/components/<Name>.jsx does NOT (frontend-only target), or a `[ready]`-tagged bullet not yet present in that domain's service.py (existing-domain target). Any match -> Builder is a candidate. No match -> Builder is not a candidate. This is the same deterministic check the Builder's own discovery step already trusts -- don't add judgment on top of it.
+1. Builder candidate: `git grep` docs/product-specs/*.md for `Status: Ready for implementation` with no matching src/todoapp/<name>/ directory (new-domain target), or `Frontend: Ready for implementation` where src/todoapp/<name>/ already exists but frontend/src/components/<Name>.jsx does NOT (frontend-only target), or `Frontend: Needs update` where both already exist (frontend-update target), or a `[ready]`-tagged bullet not yet present in that domain's service.py (existing-domain target). Any match -> Builder is a candidate. No match -> Builder is not a candidate. This is the same deterministic check the Builder's own discovery step already trusts -- don't add judgment on top of it.
 2. Maintenance candidate -- two independent sub-checks, either alone is sufficient:
    - 2a. Diff-based: find the merge commit that closed maintenance's last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing`). `git diff --stat` from that commit to `origin/master`, scoped to `src/todoapp/` and `docs/product-specs/`. Any file touched -> candidate. Don't assess whether a touched file's change looks meaningful -- any touch counts.
    - 2b. doc_gardener-based: run `git rev-parse --is-shallow-repository`; if it prints `true`, run `git fetch --unshallow` first -- skipping this step makes the next check silently under-report, not fail loudly. Then run `python3 scripts/doc_gardener.py`. Any staleness finding in its output -> candidate, independent of 2a's result. This exists because 2a can't see time-based staleness (a `Verified:` date going stale purely from the calendar, with zero file changes) -- doc_gardener.py is the only check that can.
