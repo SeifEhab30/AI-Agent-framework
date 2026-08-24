@@ -15,6 +15,10 @@ def build_router(service: TagService, emit_event: Callable[..., None]) -> APIRou
     def list_tags_recent() -> list[Tag]:
         return service.list_tags_recent()
 
+    @router.get("/search", response_model=list[Tag])
+    def search_tags(q: str) -> list[Tag]:
+        return service.search(q)
+
     @router.post("", response_model=Tag)
     def create_tag(data: TagCreate) -> Tag:
         try:

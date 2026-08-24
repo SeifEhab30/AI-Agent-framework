@@ -11,7 +11,7 @@ A minimal tag: a short name attached to nothing in particular yet.
   different things in different contexts.
 - List all tags, in creation order, since that's more useful for
   recent-first display.
-- [ready] Search tags by a case-insensitive substring match on name.
+- Search tags by a case-insensitive substring match on name.
 
 ## Non-goals
 No auth, no multi-user separation, no relation to the other domains.
