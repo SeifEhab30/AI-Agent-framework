@@ -1,6 +1,6 @@
 # Dispatcher Routine — standing prompt
 
-Verified: 2026-08-19
+Verified: 2026-08-24
 
 This file is the **source of truth** for the Dispatcher Routine's
 instructions, same convention as `routine-prompt.md`/`builder-prompt.md`.
@@ -107,6 +107,28 @@ independent maintenance session confirmed running
 `actions_run_trigger` for this same call instead of a manual `gh`
 invocation.
 
+**First real unattended runs (2026-08-24):** fired twice for real via the
+live trigger (no manual `gh` call), both times correctly. Run 1: Builder
+candidate found (`labels.md`'s `[ready]` search bullet), fired -- Builder
+built it, all validation green, opened PR #65. Maintenance was
+dedup-blocked (PR #64 already open). Run 2, after #64 was closed unmerged
+and #65 merged: Builder correctly found no candidate (nothing `[ready]`
+left unimplemented); maintenance's diff-based check found real
+post-merge changes and fired -- maintenance reviewed everything, found
+nothing actionable within its scope, correctly opened no PR.
+
+**Known gap, found during run 2's review (2026-08-24):** maintenance's
+own `doc_gardener.py` step silently skips its `Verified:`-date
+staleness check on a shallow clone -- no error, just fewer findings than
+a real check would produce, indistinguishable in the output from an
+honest "nothing stale." The dispatcher's maintenance candidate check
+(item 2 below) had no way to see this category of finding at all, since
+it only looks at `src/todoapp/`/`docs/product-specs/` diffs, not
+doc_gardener's own report. Fixed by adding a second, independent
+candidate signal (item 2b) that runs `doc_gardener.py` itself, after
+unshallowing -- see CANDIDATE CHECKS below. `routine-prompt.md` needs
+the same unshallow fix in its own step 1, tracked separately.
+
 **Credential handling, important:** this repo is public. No real secret
 value may ever be committed here or anywhere in this file. The two fire
 tokens live only in GitHub's encrypted Actions secrets, never in this
@@ -122,11 +144,14 @@ You are the Dispatcher Routine for "AI Agent" (SeifEhab30/AI-Agent-framework) --
 STARTING STATE
 - Two known agents, two known fire targets: maintenance, Builder. Never any others -- you have no authority to discover or guess at targets beyond what's stated here.
 - Firing goes through GitHub Actions, not a direct API call: use ToolSearch to load `mcp__github__actions_run_trigger`, then call it with method `run_workflow`, owner `SeifEhab30`, repo `AI-Agent-framework`, the workflow file `routine-fire.yml`, ref `master`, and inputs `{"target": "maintenance"}` or `{"target": "builder"}`. That workflow holds the real per-routine fire tokens itself -- you never see or need them, and you need no GitHub credential of your own beyond what the connector already grants you.
-- No pre-installed venv, but you don't need one -- all checks below are git/grep operations, no Python tooling required.
+- No pre-installed venv, and you don't need one for most checks below -- they're git/grep operations. The one exception is `scripts/doc_gardener.py` (candidate check 2b) -- it's pure standard library, no pip install needed, just run it with plain `python3`.
 
 CANDIDATE CHECKS -- run both, independently, every time
 1. Builder candidate: `git grep` docs/product-specs/*.md for `Status: Ready for implementation` with no matching src/todoapp/<name>/ directory, or a `[ready]`-tagged bullet not yet present in that domain's service.py. Any match -> Builder is a candidate. No match -> Builder is not a candidate. This is the same deterministic check the Builder's own discovery step already trusts -- don't add judgment on top of it.
-2. Maintenance candidate: find the merge commit that closed maintenance's last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing`). `git diff --stat` from that commit to `origin/master`, scoped to `src/todoapp/` and `docs/product-specs/`. Any file touched -> maintenance is a candidate. Nothing touched -> maintenance is not a candidate. Don't assess whether a touched file's change looks meaningful -- any touch counts.
+2. Maintenance candidate -- two independent sub-checks, either alone is sufficient:
+   - 2a. Diff-based: find the merge commit that closed maintenance's last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing`). `git diff --stat` from that commit to `origin/master`, scoped to `src/todoapp/` and `docs/product-specs/`. Any file touched -> candidate. Don't assess whether a touched file's change looks meaningful -- any touch counts.
+   - 2b. doc_gardener-based: run `git rev-parse --is-shallow-repository`; if it prints `true`, run `git fetch --unshallow` first -- skipping this step makes the next check silently under-report, not fail loudly. Then run `python3 scripts/doc_gardener.py`. Any staleness finding in its output -> candidate, independent of 2a's result. This exists because 2a can't see time-based staleness (a `Verified:` date going stale purely from the calendar, with zero file changes) -- doc_gardener.py is the only check that can.
+   - Maintenance is a candidate if 2a OR 2b finds something. Neither finding anything -> maintenance is not a candidate.
 
 DEDUP GUARD -- before firing either agent
 - Check whether that agent's standing branch (`agentic-maintenance/standing` or `agentic-build/standing`) already has an open, unmerged PR. If so, don't fire again -- that agent already has pending work sitting in front of a human, adding another run wouldn't surface anything new until that PR is resolved.
@@ -139,7 +164,7 @@ ACTIONS
 FORBIDDEN ACTIONS -- never, no exceptions
 - Never edit, commit, or push any file in the repo.
 - Never call any GitHub Actions workflow other than `routine-fire.yml`, and only with `target` set to `maintenance` or `builder`. Never attempt to reach `api.anthropic.com` directly, never attempt to discover or use any trigger id or token yourself.
-- Never guess at a candidate signal beyond the two checks stated above. A marker or convention you don't recognize is not a signal to act on -- it's outside this version's scope, leave it alone.
+- Never guess at a candidate signal beyond the checks stated above (1, 2a, 2b). A marker or convention you don't recognize is not a signal to act on -- it's outside this version's scope, leave it alone.
 - Never fire an agent more than once in the same dispatcher run.
 
 STOP CONDITIONS

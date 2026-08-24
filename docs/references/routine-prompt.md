@@ -1,6 +1,6 @@
 # Agentic Routine — standing prompt
 
-Verified: 2026-08-17
+Verified: 2026-08-24
 
 This file is the **source of truth** for the scheduled maintenance
 Routine's instructions. The Routine itself is configured outside this
@@ -69,6 +69,15 @@ Builder-territory feature that happened to fit the service.py+
 test_service.py boundary. Step 2 now explicitly skips any bullet/spec
 carrying either marker, full stop, regardless of scope fit.
 
+**Shallow-clone unshallow step added** (2026-08-24): a live run
+(`cse_013dkU4KRVPDRLCGwgxRaDPZ`, fired by the Dispatcher Routine) printed
+`doc_gardener: shallow clone or no git history -- skipping
+Verified:-date staleness checks` and then reported "no staleness
+found" -- a skipped check silently indistinguishable from a clean one.
+Added an explicit unshallow step up front so `doc_gardener.py`'s
+`Verified:`-date checks reliably actually run instead of silently
+no-opping on whatever clone depth the sandbox happens to provide.
+
 ---
 
 ## Prompt
@@ -76,6 +85,8 @@ carrying either marker, full stop, regardless of scope fit.
 You're maintaining https://github.com/SeifEhab30/AI-Agent-framework, an agent-workflow scaffold: enforced layered architecture (Types→Config→Repo→Service→Runtime→UI), a Providers cross-cutting layer, doc-gardening, golden-rule lints.
 
 Environment has no pre-installed venv. Once, up front: `python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt -e . ruff import-linter`. Use `.venv/bin/python`/`.venv/bin/ruff`/etc. for every command below -- don't rediscover this by trial and error.
+
+Also up front, before step 1: run `git rev-parse --is-shallow-repository`. If it prints `true`, run `git fetch --unshallow`. `doc_gardener.py`'s `Verified:`-date staleness check silently skips on a shallow clone -- no error, just fewer findings than a real check, indistinguishable in the output from an honest "nothing stale." A skipped check must never be reported as a clean one.
 
 Read MAP.md, docs/references/conventions.md (house rules: narrow scope, typed boundaries, reuse platform/, no bare except:, no print() in domain code), and docs/quality-score/findings-log.md (category vocabulary + history, needed in step 3).
 
