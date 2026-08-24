@@ -34,6 +34,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          echo "::notice::firing target=$TARGET"
+
           case "$TARGET" in
             maintenance)
               TRIGGER_ID="trig_011DbA7ZQiMSGW64Md3Yjaur"
