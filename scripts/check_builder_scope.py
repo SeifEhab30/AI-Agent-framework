@@ -62,13 +62,28 @@ FORBIDDEN_PATHS = (
     "scripts/check_golden_rules.py",
     "scripts/doc_gardener.py",
     "scripts/check_builder_scope.py",
-    "frontend/",
+    "frontend/src/App.css",
+    "frontend/src/index.css",
+    "frontend/vite.config.js",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "frontend/.oxlintrc.json",
     ".github/workflows/",
 )
 
-# app.py/pyproject.toml/MAP.md are mechanical registration edits and are
-# evaluated by their own dedicated checks below, not by the domain-count check.
-REGISTRATION_PATHS = ("src/todoapp/app.py", "pyproject.toml", "MAP.md")
+FRONTEND_COMPONENTS_DIR = "frontend/src/components/"
+FRONTEND_API_PATH = "frontend/src/api.js"
+
+# app.py/pyproject.toml/MAP.md/App.jsx/api.js are mechanical registration
+# edits and are evaluated by their own dedicated checks below, not by the
+# domain-count check.
+REGISTRATION_PATHS = (
+    "src/todoapp/app.py",
+    "pyproject.toml",
+    "MAP.md",
+    "frontend/src/App.jsx",
+    FRONTEND_API_PATH,
+)
 
 STATUS_READY_PATTERN = re.compile(r"^Status:\s*Ready for implementation\s*$", re.MULTILINE)
 READY_BULLET_PATTERN = re.compile(r"^-\s*\[ready\]", re.MULTILINE)
@@ -242,6 +257,70 @@ def check_target_authorized(base: str, domain: str) -> list[str]:
     return []
 
 
+def frontend_touched_domains(files: list[str]) -> set[str]:
+    """Domain names (lowercased) implied by touched frontend component/test
+    files, e.g. frontend/src/components/Labels.jsx -> {'labels'}."""
+    domains = set()
+    for f in files:
+        if not f.startswith(FRONTEND_COMPONENTS_DIR):
+            continue
+        name = f[len(FRONTEND_COMPONENTS_DIR) :]
+        for suffix in (".test.jsx", ".jsx"):
+            if name.endswith(suffix):
+                domains.add(name[: -len(suffix)].lower())
+                break
+    return domains
+
+
+def check_frontend_scope(files: list[str], domain: str | None, is_new: bool) -> list[str]:
+    """New-domain builds must add a complete frontend set (component, test,
+    api.js export); existing-domain builds must never touch frontend/ at all
+    -- see builder-prompt.md TARGET STATE for the v1 split."""
+    fe_domains = frontend_touched_domains(files)
+    api_touched = FRONTEND_API_PATH in files
+
+    if domain is None:
+        if fe_domains or api_touched:
+            return ["frontend/ touched with no single identifiable backend target domain"]
+        return []
+
+    if not is_new:
+        if fe_domains or api_touched:
+            return [
+                f"{domain}: frontend/ touched on an existing-domain run -- frontend "
+                f"wiring is out of scope for [ready]-bullet builds"
+            ]
+        return []
+
+    issues = []
+    if len(fe_domains) > 1:
+        issues.append(
+            f"more than one frontend domain touched: {sorted(fe_domains)} -- "
+            f"the Builder may only work on one domain per run"
+        )
+    elif fe_domains and next(iter(fe_domains)) != domain:
+        issues.append(
+            f"frontend component touched for '{next(iter(fe_domains))}' doesn't "
+            f"match the backend target domain '{domain}'"
+        )
+
+    component_name = domain.capitalize()
+    component_path = f"{FRONTEND_COMPONENTS_DIR}{component_name}.jsx"
+    test_path = f"{FRONTEND_COMPONENTS_DIR}{component_name}.test.jsx"
+    if component_path not in files:
+        issues.append(f"{domain}: new-domain build missing frontend component {component_path}")
+    if test_path not in files:
+        issues.append(f"{domain}: new-domain build missing frontend test {test_path}")
+
+    api_file = REPO_ROOT / "frontend" / "src" / "api.js"
+    if not api_touched:
+        issues.append(f"{domain}: new-domain build didn't touch {FRONTEND_API_PATH}")
+    elif f"export const {domain}Api" not in api_file.read_text(encoding="utf-8"):
+        issues.append(f"{domain}: missing 'export const {domain}Api' in {FRONTEND_API_PATH}")
+
+    return issues
+
+
 def count_test_functions(source: str) -> set[str]:
     try:
         tree = ast.parse(source)
@@ -314,9 +393,11 @@ def main() -> int:
         issues.extend(check_contracts_only_appended(args.base))
 
     domain = target_domain(files)
+    is_new = domain is not None and not domain_exists_at(args.base, domain)
     if domain is not None:
         issues.extend(check_target_authorized(args.base, domain))
         issues.extend(check_traceability(args.base, domain))
+    issues.extend(check_frontend_scope(files, domain, is_new))
 
     if not issues:
         print("check_builder_scope: no violations found.")

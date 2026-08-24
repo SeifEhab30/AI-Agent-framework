@@ -84,6 +84,27 @@ one-line reminder in that PR's description instead of its own PR; a
 dedicated flag-only PR is opened only when there's nothing else to
 build this run.
 
+**Frontend now required for new-domain builds** (2026-08-24): v1's
+blanket `frontend/` exclusion was reasoned as "nothing in the validation
+suite can check a React component" -- true when written, but the
+components themselves were never the hard part. Every existing one
+(`Bookmarks.jsx`, `Notes.jsx`, `Todos.jsx`, `Widgets.jsx`) follows an
+identical template (state/effect/form/list, one shared `request()`
+helper in `api.js`, zero new CSS) exactly as mechanical as the six
+backend layers. The real gap was that `frontend/` had no test tooling at
+all. Fixed: Vitest + React Testing Library added, with
+`frontend/src/components/Bookmarks.test.jsx` as the proof-of-concept and
+literal template (covers list-render, create-success, create-error --
+verified to actually fail when the create handler was deliberately
+broken, then reverted). A new-domain build (DISCOVERY rule 1) now also
+builds that domain's frontend component, API client, `App.jsx`
+registration, and component test -- see TARGET STATE/ALLOWED ACTIONS
+below. Existing-domain `[ready]` builds (DISCOVERY rule 2) stay
+backend-only for now, a deliberately separate, not-yet-made widening.
+`reminders`, `labels`, and `tags` -- every domain built before this
+change -- have no frontend at all; this is known debt, not silently
+retrofitted by this change.
+
 **Fixed branch, reused across runs** (2026-08-18): replaces the old
 `agentic-build/<timestamp>-<domain>` fresh-branch-per-run naming with a
 single standing branch, `agentic-build/standing`. A merged prior PR
@@ -103,7 +124,7 @@ STARTING STATE
 - Every domain under src/todoapp/<domain>/ has exactly 6 layer files: types.py, config.py, repo.py, service.py, runtime.py, ui.py.
 - Domains register in 3 places (full detail under ALLOWED ACTIONS): pyproject.toml contracts, app.py mount block, MAP.md row. scripts/check_golden_rules.py rule 5 fails CI if any is missing -- this IS your definition of "a complete domain."
 - No pre-installed venv. First action, always: `python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt -e . ruff import-linter`. Use `.venv/bin/python` / `.venv/bin/ruff` for every command after.
-- Read first, in order: MAP.md, docs/references/conventions.md, docs/architecture/layering.md, docs/references/builder-prompt.md (your scope guard -- follow exactly), every docs/product-specs/*.md, and one existing domain end-to-end (e.g. src/todoapp/notes/*.py + tests/notes/test_service.py) as your template.
+- Read first, in order: MAP.md, docs/references/conventions.md, docs/architecture/layering.md, docs/references/builder-prompt.md (your scope guard -- follow exactly), every docs/product-specs/*.md, one existing domain end-to-end (e.g. src/todoapp/notes/*.py + tests/notes/test_service.py) as your backend template, and for a new-domain target only, frontend/src/components/Bookmarks.jsx + Bookmarks.test.jsx as your frontend template.
 
 DISCOVERY -- find exactly ONE target, every run. Mirrors the maintenance Routine's spec-vs-code comparison but inverts the policy: it only reports or point-fixes; you implement fully.
 1. Any docs/product-specs/<name>.md with `Status: Ready for implementation` and NO matching src/todoapp/<name>/ -> new-domain target, entire spec is the unit.
@@ -113,26 +134,31 @@ DISCOVERY -- find exactly ONE target, every run. Mirrors the maintenance Routine
 5. Spec ambiguous/contradictory/not confidently ready -> do not build it, do not guess. Contradiction isn't only two bullets stating opposite rules back-to-back -- two bullets that name the same operation (e.g. two "list all X" bullets, two "create X" bullets) with mutually exclusive outcomes are ALSO ambiguous, even if each reads as plausible in isolation. Don't resolve this by building both as separate methods, and don't silently pick one interpretation over the other (e.g. inventing what "recent-first" means when the spec doesn't say) -- that's guessing wearing a confident tone. If it already carries `Status: Blocked -- ambiguous`, skip it silently -- already flagged, nothing new to say. Otherwise flag it (see ALLOWED ACTIONS): add `Status: Blocked -- ambiguous` and a `## Needs resolution` section quoting the exact conflicting bullets. If this run has another valid target, fold that flag into the same PR as a one-line reminder in the description -- never a separate PR just for this. Only open a PR containing solely this flag when the run has nothing else to build.
 
 TARGET STATE -- "done" for this run
-Backend fully implemented and tested through every layer (types->config->repo->service->runtime->ui) for the ONE target only. Not "end-to-end" -- frontend/ is always out of scope in v1, stated explicitly in the PR ("frontend wiring not included -- human follow-up"), never silently missing.
+Backend fully implemented and tested through every layer (types->config->repo->service->runtime->ui) for the ONE target only.
+
+New-domain target only (DISCOVERY rule 1): also build the frontend. Domain name title-cased for the component name (e.g. `labels` -> `Labels.jsx`). Create frontend/src/components/<Domain>.jsx following the existing four components' exact template (useState/useEffect, a form, a list, wired through the shared `request()` helper) -- reuse existing global CSS classes only (`.card-list`, `.entry-card`, `.new-card`, `.error`, etc.), never write new CSS. Extend frontend/src/api.js with one new `<domain>Api` export mirroring the domain's service.py public methods, following the existing exports' exact shape. Register the component in frontend/src/App.jsx's TABS object -- one import, one entry, following the existing four's exact pattern, never reordering or touching the others. Write frontend/src/components/<Domain>.test.jsx covering the same three cases Bookmarks.test.jsx established: initial list render, create-success flow, create-validation-error flow.
+
+Existing-domain target (DISCOVERY rule 2): backend only, same as before -- frontend wiring for an existing-domain `[ready]` addition is out of scope, stated explicitly in the PR ("frontend wiring not included -- human follow-up"), never silently missing.
 
 Every normative spec behavior needs a named, passing test. PR description includes a table: requirement -> test function. A requirement with no row, or an untested row, means not done -- check_builder_scope.py enforces a lower bound (new test count >= ready requirement count), but the table itself must be genuinely accurate, not padded to pass.
 
 ALLOWED ACTIONS -- hard boundary, also mechanically enforced by scripts/check_builder_scope.py (run before opening any PR)
-- New domain: create all 6 layer files + tests/<domain>/test_service.py + tests/<domain>/__init__.py. Whole domain is the unit -- nothing to justify.
-- Existing domain: touch only files necessary for that one [ready] behavior; justify any extra file, per-file, in the PR.
-- Mechanical registration only: app.py (new domain's mount block, following existing blocks' exact pattern -- never reorder/edit others); pyproject.toml (append exactly 3 new [[tool.importlinter.contracts]] blocks + add the domain to the independence contract's modules list -- never edit an existing contract, only ever ADD to independence, never remove); MAP.md (only your own row); your target's own docs/product-specs/<domain>.md (bump Verified: after implementing exactly what's written -- never change what it promises; also clear the readiness marker you just fulfilled: new-domain target -> delete the `Status: Ready for implementation` line entirely; existing-domain target -> strip the `[ready]` tag from that one bullet only, leaving its text untouched. Don't touch markers on any other bullet or domain.).
+- New domain: create all 6 layer files + tests/<domain>/test_service.py + tests/<domain>/__init__.py, PLUS frontend/src/components/<Domain>.jsx + frontend/src/components/<Domain>.test.jsx. Whole set is the unit -- nothing to justify per-file.
+- Existing domain: touch only files necessary for that one [ready] behavior; justify any extra file, per-file, in the PR. Frontend files are never touched for this path.
+- Mechanical registration only: app.py (new domain's mount block, following existing blocks' exact pattern -- never reorder/edit others); pyproject.toml (append exactly 3 new [[tool.importlinter.contracts]] blocks + add the domain to the independence contract's modules list -- never edit an existing contract, only ever ADD to independence, never remove); MAP.md (only your own row); frontend/src/App.jsx (new-domain target only, same mechanical-registration treatment as app.py -- one import + one TABS entry, never reorder/edit others); frontend/src/api.js (new-domain target only, append exactly one new `<domain>Api` export -- never edit an existing one); your target's own docs/product-specs/<domain>.md (bump Verified: after implementing exactly what's written -- never change what it promises; also clear the readiness marker you just fulfilled: new-domain target -> delete the `Status: Ready for implementation` line entirely; existing-domain target -> strip the `[ready]` tag from that one bullet only, leaving its text untouched. Don't touch markers on any other bullet or domain.).
 - Exactly one other spec allowed, only for DISCOVERY rule 5's flag: the one ambiguous/contradictory spec found this run (if any, and if not already `Status: Blocked`) may have `Status: Blocked -- ambiguous` and a `## Needs resolution` section added -- nothing else in that file changes, no other spec gets this treatment in the same run.
 
 FORBIDDEN ACTIONS -- never, no exceptions; check_builder_scope.py fails the PR on any of these
 - Business logic in any domain other than this run's single target.
 - docs/quality-score/findings-log.md, docs/references/routine-prompt.md, docs/references/builder-prompt.md, scripts/check_golden_rules.py, scripts/doc_gardener.py, scripts/check_builder_scope.py -- maintenance-agent/human territory only.
 - Weakening, removing, or renaming any existing import-linter contract or golden rule.
-- frontend/, .github/workflows/*, any CI config.
+- Any frontend file other than the new-domain set named above: frontend/src/App.css, frontend/src/index.css, frontend/vite.config.js, frontend/package.json, frontend/package-lock.json, frontend/.oxlintrc.json, and any other domain's component or test file. Frontend touched at all on an existing-domain run.
+- .github/workflows/*, any CI config.
 - Editing a spec's requirements to make your implementation pass -- fix the implementation, or stop and report.
 - Anything beyond exactly what the target spec states -- no auth, no extra endpoints, no "while I'm here" cleanup.
 
 VALIDATION -- all must pass before opening a PR:
-`ruff check .`, `ruff format --check .`, `lint-imports`, `pytest -q`, `python scripts/check_golden_rules.py`, `python scripts/check_builder_scope.py --base origin/master`, `python scripts/doc_gardener.py`.
+`ruff check .`, `ruff format --check .`, `lint-imports`, `pytest -q`, `python scripts/check_golden_rules.py`, `python scripts/check_builder_scope.py --base origin/master`, `python scripts/doc_gardener.py`. New-domain target only, additionally: `cd frontend && npm run test`.
 
 STOP CONDITIONS / CHECKPOINTS
 discover -> implement -> test -> validate -> open PR -> STOP.
