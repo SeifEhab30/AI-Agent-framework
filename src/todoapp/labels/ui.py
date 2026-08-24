@@ -15,6 +15,10 @@ def build_router(service: LabelService, emit_event: Callable[..., None]) -> APIR
     def list_labels() -> list[Label]:
         return service.list_labels()
 
+    @router.get("/search", response_model=list[Label])
+    def search_labels(q: str) -> list[Label]:
+        return service.search(q)
+
     @router.post("", response_model=Label)
     def create_label(data: LabelCreate) -> Label:
         try:

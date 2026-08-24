@@ -25,6 +25,10 @@ class LabelService:
     def list_labels(self) -> list[Label]:
         return self._repo.list_all()
 
+    def search(self, query: str) -> list[Label]:
+        query = query.lower()
+        return [label for label in self._repo.list_all() if query in label.name.lower()]
+
     def delete_label(self, label_id: str) -> None:
         label = self._repo.get(label_id)
         if label is None:
