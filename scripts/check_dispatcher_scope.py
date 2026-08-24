@@ -146,8 +146,7 @@ def check_window(since: datetime, until: datetime) -> list[str]:
             continue
         if target not in VALID_TARGETS:
             issues.append(
-                f"run {run.run_id}: fired target '{target}' is not one of "
-                f"{sorted(VALID_TARGETS)}"
+                f"run {run.run_id}: fired target '{target}' is not one of {sorted(VALID_TARGETS)}"
             )
         if target in seen_targets:
             issues.append(
