@@ -33,6 +33,19 @@ which domain is this run's target:
   it kills a self-reported table that overclaims how many requirements
   are actually tested.
 
+Four build modes, determined from the diff itself (not trusted from the
+Builder's own claim): new_domain (backend didn't exist at base -- full
+six-layer + frontend set required), frontend_only (backend existed,
+frontend didn't, this diff doesn't touch the backend -- an already-built
+domain getting its frontend built for the first time, authorized by a
+`Frontend: Ready for implementation` spec marker), frontend_update
+(backend and frontend both existed, this diff doesn't touch the backend
+-- an existing frontend catching up to backend drift, authorized by a
+`Frontend: Needs update` spec marker, api.js export change optional
+since the update may be UI-only), and existing_domain (backend existed
+and this diff touches it -- a `[ready]`-bullet build, backend-only,
+frontend/ forbidden entirely for this mode).
+
 Known accepted gap for v1, not mechanically checked: whether an
 existing-domain run touched only the files *strictly necessary* for its
 one target behavior ("smallest coherent set" in builder-prompt.md).
@@ -62,15 +75,32 @@ FORBIDDEN_PATHS = (
     "scripts/check_golden_rules.py",
     "scripts/doc_gardener.py",
     "scripts/check_builder_scope.py",
-    "frontend/",
+    "frontend/src/App.css",
+    "frontend/src/index.css",
+    "frontend/vite.config.js",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "frontend/.oxlintrc.json",
     ".github/workflows/",
 )
 
-# app.py/pyproject.toml/MAP.md are mechanical registration edits and are
-# evaluated by their own dedicated checks below, not by the domain-count check.
-REGISTRATION_PATHS = ("src/todoapp/app.py", "pyproject.toml", "MAP.md")
+FRONTEND_COMPONENTS_DIR = "frontend/src/components/"
+FRONTEND_API_PATH = "frontend/src/api.js"
+
+# app.py/pyproject.toml/MAP.md/App.jsx/api.js are mechanical registration
+# edits and are evaluated by their own dedicated checks below, not by the
+# domain-count check.
+REGISTRATION_PATHS = (
+    "src/todoapp/app.py",
+    "pyproject.toml",
+    "MAP.md",
+    "frontend/src/App.jsx",
+    FRONTEND_API_PATH,
+)
 
 STATUS_READY_PATTERN = re.compile(r"^Status:\s*Ready for implementation\s*$", re.MULTILINE)
+FRONTEND_READY_PATTERN = re.compile(r"^Frontend:\s*Ready for implementation\s*$", re.MULTILINE)
+FRONTEND_NEEDS_UPDATE_PATTERN = re.compile(r"^Frontend:\s*Needs update\s*$", re.MULTILINE)
 READY_BULLET_PATTERN = re.compile(r"^-\s*\[ready\]", re.MULTILINE)
 BEHAVIOR_SECTION_PATTERN = re.compile(r"^## Behavior\s*$(.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
 BEHAVIOR_BULLET_PATTERN = re.compile(r"^-\s+\S", re.MULTILINE)
@@ -96,8 +126,7 @@ def check_forbidden_paths(files: list[str]) -> list[str]:
     return issues
 
 
-def target_domain(files: list[str]) -> str | None:
-    """The single domain this diff touches, or None if none/ambiguous."""
+def backend_domains_touched(files: list[str]) -> set[str]:
     domains = set()
     for f in files:
         if f in REGISTRATION_PATHS:
@@ -107,19 +136,23 @@ def target_domain(files: list[str]) -> str | None:
             domains.add(parts[2])
         elif len(parts) >= 2 and parts[0] == "tests":
             domains.add(parts[1])
-    return next(iter(domains)) if len(domains) == 1 else None
+    return domains
+
+
+def target_domain(files: list[str]) -> str | None:
+    """The single domain this diff touches, or None if none/ambiguous.
+    Backend paths take priority; if none are touched, falls back to a
+    frontend-only target (an already-existing backend domain getting its
+    frontend built for the first time -- see the Frontend: marker)."""
+    domains = backend_domains_touched(files)
+    if domains:
+        return next(iter(domains)) if len(domains) == 1 else None
+    fe_domains = frontend_touched_domains(files)
+    return next(iter(fe_domains)) if len(fe_domains) == 1 else None
 
 
 def check_domain_count(files: list[str]) -> list[str]:
-    domains = set()
-    for f in files:
-        if f in REGISTRATION_PATHS:
-            continue
-        parts = Path(f).parts
-        if len(parts) >= 3 and parts[0] == "src" and parts[1] == "todoapp":
-            domains.add(parts[2])
-        elif len(parts) >= 2 and parts[0] == "tests":
-            domains.add(parts[1])
+    domains = backend_domains_touched(files)
     if len(domains) > 1:
         return [
             f"more than one domain touched in a single run: {sorted(domains)} "
@@ -196,6 +229,17 @@ def domain_exists_at(ref: str, domain: str) -> bool:
     return result.returncode == 0
 
 
+def frontend_exists_at(ref: str, domain: str) -> bool:
+    component_path = f"{FRONTEND_COMPONENTS_DIR}{domain.capitalize()}.jsx"
+    result = subprocess.run(
+        ["git", "cat-file", "-e", f"{ref}:{component_path}"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def read_spec_at(ref: str, domain: str) -> str | None:
     """Reads a domain's spec as it stood at `ref`, not the working tree --
     the Builder is now allowed to strip the readiness marker it just
@@ -212,11 +256,11 @@ def read_spec_at(ref: str, domain: str) -> str | None:
     return result.stdout.decode("utf-8")
 
 
-def check_target_authorized(base: str, domain: str) -> list[str]:
-    """The touched domain's spec must actually carry the readiness marker --
-    binds the discovery gate (builder-prompt.md's Status/[ready] convention)
-    to the diff mechanically, instead of trusting the Builder's own claim
-    that it picked an authorized target."""
+def check_target_authorized(base: str, domain: str, mode: str) -> list[str]:
+    """The touched domain's spec must actually carry the readiness marker for
+    this run's mode -- binds the discovery gate (builder-prompt.md's
+    Status/[ready]/Frontend convention) to the diff mechanically, instead of
+    trusting the Builder's own claim that it picked an authorized target."""
     text = read_spec_at(base, domain)
     if text is None:
         return [
@@ -224,12 +268,26 @@ def check_target_authorized(base: str, domain: str) -> list[str]:
             f"-- not an authorized target"
         ]
 
-    is_new = not domain_exists_at(base, domain)
-
-    if is_new:
+    if mode == "new_domain":
         if not STATUS_READY_PATTERN.search(text):
             return [
                 f"{domain}: new domain has no 'Status: Ready for implementation' "
+                f"line in its spec -- not an authorized build target"
+            ]
+        return []
+
+    if mode == "frontend_only":
+        if not FRONTEND_READY_PATTERN.search(text):
+            return [
+                f"{domain}: frontend-only build has no 'Frontend: Ready for "
+                f"implementation' line in its spec -- not an authorized build target"
+            ]
+        return []
+
+    if mode == "frontend_update":
+        if not FRONTEND_NEEDS_UPDATE_PATTERN.search(text):
+            return [
+                f"{domain}: frontend-update build has no 'Frontend: Needs update' "
                 f"line in its spec -- not an authorized build target"
             ]
         return []
@@ -240,6 +298,89 @@ def check_target_authorized(base: str, domain: str) -> list[str]:
             f"not an authorized build target for this run"
         ]
     return []
+
+
+def frontend_touched_domains(files: list[str]) -> set[str]:
+    """Domain names (lowercased) implied by touched frontend component/test
+    files, e.g. frontend/src/components/Labels.jsx -> {'labels'}."""
+    domains = set()
+    for f in files:
+        if not f.startswith(FRONTEND_COMPONENTS_DIR):
+            continue
+        name = f[len(FRONTEND_COMPONENTS_DIR) :]
+        for suffix in (".test.jsx", ".jsx"):
+            if name.endswith(suffix):
+                domains.add(name[: -len(suffix)].lower())
+                break
+    return domains
+
+
+def check_frontend_scope(files: list[str], domain: str | None, mode: str | None) -> list[str]:
+    """new_domain and frontend_only modes must add a complete frontend set
+    (component, test, api.js export). frontend_update modifies an existing
+    set -- component and test must be touched, but a new api.js export
+    isn't mandatory (the update may be UI-only). existing_domain
+    ([ready]-bullet) runs must never touch frontend/ at all -- see
+    builder-prompt.md TARGET STATE for the four-way split."""
+    fe_domains = frontend_touched_domains(files)
+    api_touched = FRONTEND_API_PATH in files
+
+    if domain is None:
+        if fe_domains or api_touched:
+            return ["frontend/ touched with no single identifiable backend target domain"]
+        return []
+
+    if mode == "existing_domain":
+        if fe_domains or api_touched:
+            return [
+                f"{domain}: frontend/ touched on an existing-domain [ready]-bullet "
+                f"run -- frontend wiring is out of scope for that path; use a "
+                f"separate frontend-only run instead"
+            ]
+        return []
+
+    issues = []
+    if len(fe_domains) > 1:
+        issues.append(
+            f"more than one frontend domain touched: {sorted(fe_domains)} -- "
+            f"the Builder may only work on one domain per run"
+        )
+    elif fe_domains and next(iter(fe_domains)) != domain:
+        issues.append(
+            f"frontend component touched for '{next(iter(fe_domains))}' doesn't "
+            f"match the backend target domain '{domain}'"
+        )
+
+    component_name = domain.capitalize()
+    component_path = f"{FRONTEND_COMPONENTS_DIR}{component_name}.jsx"
+    test_path = f"{FRONTEND_COMPONENTS_DIR}{component_name}.test.jsx"
+    if component_path not in files:
+        issues.append(f"{domain}: build missing frontend component {component_path}")
+    if test_path not in files:
+        issues.append(f"{domain}: build missing frontend test {test_path}")
+
+    api_file = REPO_ROOT / "frontend" / "src" / "api.js"
+    if mode == "frontend_update":
+        # A new api.js export isn't mandatory here -- the update may be
+        # UI-only (e.g. surfacing a field an existing method already
+        # returns). Only check the export's shape if api.js was touched.
+        if api_touched and f"export const {domain}Api" not in api_file.read_text(encoding="utf-8"):
+            issues.append(f"{domain}: missing 'export const {domain}Api' in {FRONTEND_API_PATH}")
+    else:
+        if not api_touched:
+            issues.append(f"{domain}: build didn't touch {FRONTEND_API_PATH}")
+        elif f"export const {domain}Api" not in api_file.read_text(encoding="utf-8"):
+            issues.append(f"{domain}: missing 'export const {domain}Api' in {FRONTEND_API_PATH}")
+
+    if mode in ("frontend_only", "frontend_update"):
+        backend_touched = backend_domains_touched(files)
+        if backend_touched:
+            issues.append(
+                f"{domain}: {mode} build also touched backend file(s) in "
+                f"{sorted(backend_touched)} -- this mode must not change business logic"
+            )
+
+    return issues
 
 
 def count_test_functions(source: str) -> set[str]:
@@ -263,17 +404,20 @@ def count_ready_requirements(spec_text: str, is_new: bool) -> int:
     return len(READY_BULLET_PATTERN.findall(spec_text))
 
 
-def check_traceability(base: str, domain: str) -> list[str]:
+def check_traceability(base: str, domain: str, mode: str) -> list[str]:
     """A lower bound only: the target's new test functions (by name, diffed
     against base) must be at least as numerous as its ready-marked spec
     requirements. Doesn't prove semantic coverage -- kills the specific
-    failure of a PR's requirement-to-test table overclaiming what's tested."""
+    failure of a PR's requirement-to-test table overclaiming what's tested.
+    Not meaningful for frontend_only (no new backend requirement is being
+    traced -- check_frontend_scope's component-test check is that mode's
+    equivalent gate) -- callers should skip this mode entirely."""
     spec_text = read_spec_at(base, domain)
     test_path = REPO_ROOT / "tests" / domain / "test_service.py"
     if spec_text is None or not test_path.exists():
         return []  # other checks already cover a missing spec/domain
 
-    is_new = not domain_exists_at(base, domain)
+    is_new = mode == "new_domain"
     requirement_count = count_ready_requirements(spec_text, is_new)
     if requirement_count == 0:
         return []
@@ -314,9 +458,20 @@ def main() -> int:
         issues.extend(check_contracts_only_appended(args.base))
 
     domain = target_domain(files)
+    mode = None
     if domain is not None:
-        issues.extend(check_target_authorized(args.base, domain))
-        issues.extend(check_traceability(args.base, domain))
+        if not domain_exists_at(args.base, domain):
+            mode = "new_domain"
+        elif domain in backend_domains_touched(files):
+            mode = "existing_domain"
+        elif frontend_exists_at(args.base, domain):
+            mode = "frontend_update"
+        else:
+            mode = "frontend_only"
+        issues.extend(check_target_authorized(args.base, domain, mode))
+        if mode not in ("frontend_only", "frontend_update"):
+            issues.extend(check_traceability(args.base, domain, mode))
+    issues.extend(check_frontend_scope(files, domain, mode))
 
     if not issues:
         print("check_builder_scope: no violations found.")

@@ -2,6 +2,7 @@
 
 Verified: 2026-08-24
 Status: Ready for implementation
+Frontend: Ready for implementation
 
 ## What it does
 A minimal label: a name and a color, for tagging things elsewhere in the

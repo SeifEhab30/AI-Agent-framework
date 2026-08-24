@@ -2,6 +2,7 @@
 
 Verified: 2026-08-17
 Status: Ready for implementation
+Frontend: Ready for implementation
 
 ## What it does
 A minimal reminder. A reminder has a message and a due_at timestamp.
