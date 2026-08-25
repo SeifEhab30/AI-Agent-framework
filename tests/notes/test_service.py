@@ -42,3 +42,16 @@ def test_update_body_can_clear_to_empty(service: NoteService):
     note = service.create_note(NoteCreate(title="groceries", body="milk"))
     updated = service.update_body(note.id, "")
     assert updated.body == ""
+
+
+def test_search_matches_case_insensitive_substring(service: NoteService):
+    service.create_note(NoteCreate(title="Example Docs"))
+    service.create_note(NoteCreate(title="Other Note"))
+    results = service.search("EXAM")
+    assert len(results) == 1
+    assert results[0].title == "Example Docs"
+
+
+def test_search_no_match_returns_empty(service: NoteService):
+    service.create_note(NoteCreate(title="Example Docs"))
+    assert service.search("nope") == []

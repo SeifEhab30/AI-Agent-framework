@@ -1,6 +1,6 @@
 # Notes — Product Spec
 
-Verified: 2026-08-18
+Verified: 2026-08-25
 
 ## What it does
 A minimal note. A note has a title and a body.
@@ -10,7 +10,7 @@ A minimal note. A note has a title and a body.
 - List all notes.
 - Update a note's body.
 - Delete a note by id.
-- [ready] Search notes by a case-insensitive substring match on title.
+- Search notes by a case-insensitive substring match on title.
 
 ## Non-goals
 No auth, no multi-user separation, no rich text, no relation to the
