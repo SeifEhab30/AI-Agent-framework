@@ -4,6 +4,7 @@ import Notes from "./components/Notes";
 import Bookmarks from "./components/Bookmarks";
 import Widgets from "./components/Widgets";
 import Reminders from "./components/Reminders";
+import Labels from "./components/Labels";
 import "./App.css";
 
 const TABS = {
@@ -12,6 +13,7 @@ const TABS = {
   bookmarks: Bookmarks,
   widgets: Widgets,
   reminders: Reminders,
+  labels: Labels,
 };
 
 export default function App() {
