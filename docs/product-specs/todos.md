@@ -9,6 +9,7 @@ A minimal todo list. A todo has a title and a done flag.
 - Create a todo with a non-empty title (whitespace-only titles are rejected).
 - List all todos.
 - Toggle a todo's done state.
+- [ready] Delete a todo by id.
 
 ## Non-goals
 No auth, no multi-user separation, no due dates, no persistence beyond local
