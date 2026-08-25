@@ -43,3 +43,14 @@ def test_toggle_done_flips_back_off(service: TodoService):
 def test_toggle_missing_raises(service: TodoService):
     with pytest.raises(NotFoundError):
         service.toggle_done("nope")
+
+
+def test_delete_todo(service: TodoService):
+    todo = service.create_todo(TodoCreate(title="buy milk"))
+    service.delete_todo(todo.id)
+    assert service.list_todos() == []
+
+
+def test_delete_missing_raises(service: TodoService):
+    with pytest.raises(NotFoundError):
+        service.delete_todo("nope")

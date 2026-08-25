@@ -43,6 +43,10 @@ class TodoRepo:
         self._conn.execute("UPDATE todos SET done = ? WHERE id = ?", (int(done), todo_id))
         self._conn.commit()
 
+    def delete(self, todo_id: str) -> None:
+        self._conn.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
+        self._conn.commit()
+
     @staticmethod
     def _to_todo(row: tuple) -> Todo:
         id_, title, done, created_at = row
