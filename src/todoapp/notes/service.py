@@ -21,6 +21,10 @@ class NoteService:
     def list_notes(self) -> list[Note]:
         return self._repo.list_all()
 
+    def search(self, query: str) -> list[Note]:
+        query = query.lower()
+        return [n for n in self._repo.list_all() if query in n.title.lower()]
+
     def update_body(self, note_id: str, body: str) -> Note:
         note = self._repo.get(note_id)
         if note is None:

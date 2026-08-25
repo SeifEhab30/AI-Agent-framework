@@ -24,6 +24,10 @@ def build_router(service: NoteService, emit_event: Callable[..., None]) -> APIRo
         emit_event("note_created", note_id=note.id)
         return note
 
+    @router.get("/search", response_model=list[Note])
+    def search_notes(q: str) -> list[Note]:
+        return service.search(q)
+
     @router.post("/{note_id}", response_model=Note)
     def update_note(note_id: str, data: NoteUpdate) -> Note:
         try:
