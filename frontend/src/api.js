@@ -50,3 +50,11 @@ export const remindersApi = {
   markDone: (id) => request(`/reminders/${id}/done`, { method: "POST" }),
   delete: (id) => request(`/reminders/${id}`, { method: "DELETE" }),
 };
+
+export const labelsApi = {
+  list: () => request("/labels"),
+  create: (name, color) =>
+    request("/labels", { method: "POST", body: JSON.stringify({ name, color }) }),
+  delete: (id) => request(`/labels/${id}`, { method: "DELETE" }),
+  search: (q) => request(`/labels/search?q=${encodeURIComponent(q)}`),
+};
