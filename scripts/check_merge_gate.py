@@ -13,12 +13,13 @@ Checks, in order:
    check_builder_scope.py itself -- CI already re-executes all of those
    fresh, independent of anything the PR's own description claims, and
    redoing that here would just pay twice for an answer already given.
-2. The PR's branch is agentic-build/* and its diff shape matches the
-   frontend_only mode only. Initial auto-merge eligibility boundary --
-   existing_domain, frontend_update, and new_domain builds are not
-   auto-mergeable yet, same "prove narrow, then widen" discipline as every
-   other capability this repo has added (dispatcher: 2 agents before a
-   3rd; Builder: new_domain before frontend modes, each proven separately).
+2. The PR's branch is agentic-build/* and its diff shape matches
+   frontend_only, frontend_update, or existing_domain (exactly one backend
+   domain touched, no frontend touched). new_domain (touches both backend
+   and frontend at once -- the biggest blast radius) is still not
+   auto-mergeable, same "prove narrow, then widen" discipline as every
+   other capability this repo has added -- frontend_only was proven live
+   first (PR #82), then widened to the other two.
 3. Traceability table structural check: the PR body's table lists every
    spec requirement for the target domain (not just what changed this
    run), one row per requirement plus three fixed frontend rows whenever
@@ -109,25 +110,41 @@ def check_ci_green(info: dict) -> list[str]:
 
 
 def check_branch_and_mode(info: dict) -> list[str]:
+    """Accepts two diff shapes: frontend_only/frontend_update (no backend
+    domain touched, a frontend component touched -- the two aren't
+    distinguished here, same traceability logic covers both) and
+    existing_domain (exactly one backend domain touched, no frontend
+    touched). Rejects new_domain (touches both -- the biggest blast radius,
+    not auto-mergeable) and anything touching neither."""
     branch = info.get("headRefName", "")
     if not branch.startswith(ELIGIBLE_BRANCH_PREFIX):
         return [f"branch '{branch}' is not under {ELIGIBLE_BRANCH_PREFIX} -- not a Builder PR"]
 
     paths = [f["path"] for f in info.get("files", [])]
-    touches_backend = any(p.startswith("src/todoapp/") for p in paths)
+    backend_domains = {
+        p.split("/")[2]
+        for p in paths
+        if p.startswith("src/todoapp/") and p != "src/todoapp/app.py" and len(p.split("/")) >= 3
+    }
     touches_frontend = any(p.startswith("frontend/src/components/") for p in paths)
 
-    issues = []
-    if touches_backend:
-        issues.append(
-            "diff touches src/todoapp/ -- not a frontend_only build, "
-            "outside current auto-merge eligibility"
-        )
-    if not touches_frontend:
-        issues.append(
-            "diff touches no frontend component -- doesn't look like a frontend_only build"
-        )
-    return issues
+    if backend_domains and touches_frontend:
+        return [
+            "diff touches both a backend domain and a frontend component -- "
+            "looks like new_domain (or a mixed build), outside current "
+            "auto-merge eligibility"
+        ]
+    if not backend_domains and not touches_frontend:
+        return [
+            "diff touches neither src/todoapp/<domain>/ nor a frontend component "
+            "-- doesn't look like a recognized Builder build shape"
+        ]
+    if len(backend_domains) > 1:
+        return [
+            f"diff touches more than one backend domain: {sorted(backend_domains)} "
+            f"-- outside Builder's own single-domain-per-run scope, should never happen"
+        ]
+    return []
 
 
 def spec_path_for(info: dict) -> str | None:
