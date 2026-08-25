@@ -1,6 +1,6 @@
 # Notes — Product Spec
 
-Verified: 2026-08-18
+Verified: 2026-08-25
 
 ## What it does
 A minimal note. A note has a title and a body.

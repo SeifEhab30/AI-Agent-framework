@@ -31,6 +31,13 @@ def build_router(service: NoteService, emit_event: Callable[..., None]) -> APIRo
         except NotFoundError as e:
             raise HTTPException(status_code=404, detail=str(e)) from e
 
+    @router.delete("/{note_id}", status_code=204)
+    def delete_note(note_id: str) -> None:
+        try:
+            service.delete_note(note_id)
+        except NotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+
     return router
 
 

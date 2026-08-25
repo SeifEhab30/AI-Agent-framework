@@ -27,3 +27,9 @@ class NoteService:
             raise NotFoundError(f"note {note_id} not found")
         self._repo.set_body(note_id, body)
         return self._repo.get(note_id)
+
+    def delete_note(self, note_id: str) -> None:
+        note = self._repo.get(note_id)
+        if note is None:
+            raise NotFoundError(f"note {note_id} not found")
+        self._repo.delete(note_id)
