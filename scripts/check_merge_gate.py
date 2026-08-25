@@ -42,9 +42,16 @@ floor, so it hands that one question to a model rather than skipping it.
 Pass --mechanical-only to stop before this step (e.g. for local testing
 without agent-CLI credentials available).
 
+No `gh` CLI in your environment? Don't hand-replicate this script's logic
+from memory -- fetch the same inputs some other way (e.g. GitHub MCP
+tools) and run the real check via --from-json instead. See that flag's
+help text for the exact JSON shape, and merge-gate-prompt.md for the
+step-by-step.
+
 Usage:
   python scripts/check_merge_gate.py --pr 73
   python scripts/check_merge_gate.py --pr 73 --mechanical-only
+  python scripts/check_merge_gate.py --from-json data.json --mechanical-only
 """
 
 import argparse
@@ -189,18 +196,12 @@ def frontend_component_exists(pr: int, domain: str) -> bool:
 
 
 def check_traceability(pr: int, info: dict) -> tuple[list[str], list[dict]]:
-    """Returns (issues, rows). Table convention (builder-prompt.md): one row
-    per spec requirement for the target domain, ALWAYS -- not just what
-    changed this run -- plus three fixed frontend rows whenever the domain
-    has a frontend. Each row is Modified (a genuinely new test, this diff)
-    or Not modified (an existing test, from an earlier PR, unchanged). This
-    is what makes the table meaningful for frontend_only/frontend_update
-    runs: most or all backend rows there are legitimately Not modified,
-    which is a complete accurate table, not a red flag.
-
-    `rows` returned is only the Modified ones -- what the semantic review
-    step needs to judge. Not modified rows are already covered by CI
-    passing on tests that already existed; nothing new to judge there."""
+    """Fetches everything check_traceability_pure needs via gh/git, then
+    delegates to it. See that function for the actual check logic -- kept
+    separate so an environment without `gh` (see --from-json / run-agent.sh
+    docstring, and merge-gate-prompt.md) can fetch the same inputs some
+    other way (e.g. GitHub MCP tools) and call the pure function directly,
+    instead of an agent re-deriving this logic from memory each run."""
     spec_path = spec_path_for(info)
     if spec_path is None:
         return (
@@ -214,26 +215,55 @@ def check_traceability(pr: int, info: dict) -> tuple[list[str], list[dict]]:
     except subprocess.CalledProcessError:
         return ([f"could not read {spec_path} at PR head commit"], [])
 
+    frontend_exists = frontend_component_exists(pr, domain)
+    diff = _gh("pr", "diff", str(pr))
+    existing_test_text = head_file_text(f"tests/{domain}/test_service.py") + head_file_text(
+        f"frontend/src/components/{domain.capitalize()}.test.jsx"
+    )
+    body = info.get("body") or ""
+
+    return check_traceability_pure(spec_text, frontend_exists, body, diff, existing_test_text)
+
+
+def check_traceability_pure(
+    spec_text: str,
+    frontend_exists: bool,
+    pr_body: str,
+    diff: str,
+    existing_test_text: str,
+) -> tuple[list[str], list[dict]]:
+    """The actual traceability check, with no I/O of its own -- takes
+    already-fetched strings so it can be called identically whether they
+    came from `gh`/`git show` (check_traceability) or from GitHub MCP tools
+    (--from-json). Returns (issues, rows).
+
+    Table convention (builder-prompt.md): one row per spec requirement for
+    the target domain, ALWAYS -- not just what changed this run -- plus
+    three fixed frontend rows whenever the domain has a frontend. Each row
+    is Modified (a genuinely new test, this diff) or Not modified (an
+    existing test, from an earlier PR, unchanged). This is what makes the
+    table meaningful for frontend_only/frontend_update runs: most or all
+    backend rows there are legitimately Not modified, which is a complete
+    accurate table, not a red flag.
+
+    `rows` returned is only the Modified ones -- what the semantic review
+    step needs to judge. Not modified rows are already covered by CI
+    passing on tests that already existed; nothing new to judge there."""
     requirement_count = len(SPEC_BULLET_PATTERN.findall(spec_text))
-    frontend_rows_expected = FRONTEND_ROW_COUNT if frontend_component_exists(pr, domain) else 0
+    frontend_rows_expected = FRONTEND_ROW_COUNT if frontend_exists else 0
     expected_total = requirement_count + frontend_rows_expected
 
-    body = info.get("body") or ""
-    table_rows = TABLE_ROW_PATTERN.findall(body)  # (requirement, status, test)
+    table_rows = TABLE_ROW_PATTERN.findall(pr_body)  # (requirement, status, test)
 
     issues = []
     if len(table_rows) != expected_total:
         issues.append(
-            f"{spec_path}: expected {expected_total} traceability row(s) "
+            f"expected {expected_total} traceability row(s) "
             f"({requirement_count} spec requirement(s) + {frontend_rows_expected} "
             f"frontend case(s)) but PR body has {len(table_rows)}"
         )
 
-    diff = _gh("pr", "diff", str(pr))
     added_lines = "\n".join(line for line in diff.splitlines() if line.startswith("+"))
-    existing_test_text = head_file_text(f"tests/{domain}/test_service.py") + head_file_text(
-        f"frontend/src/components/{domain.capitalize()}.test.jsx"
-    )
 
     rows = []
     for requirement, status, test_ref in table_rows:
@@ -312,7 +342,19 @@ def run_semantic_review(rows: list[dict]) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pr", required=True, type=int)
+    parser.add_argument("--pr", type=int, help="PR number -- fetches via gh/git")
+    parser.add_argument(
+        "--from-json",
+        type=Path,
+        help=(
+            "Run against pre-fetched data instead of calling gh/git -- for an "
+            "environment without the gh CLI (see merge-gate-prompt.md). JSON "
+            "shape: {info: {headRefName, baseRefName, body, files, "
+            "statusCheckRollup}, spec_text, frontend_exists, diff, "
+            "existing_test_text} -- same fields gh/git would have fetched, "
+            "gathered instead via GitHub MCP tools."
+        ),
+    )
     parser.add_argument(
         "--mechanical-only",
         action="store_true",
@@ -320,12 +362,25 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    info = pr_view(args.pr)
+    if args.from_json:
+        data = json.loads(args.from_json.read_text(encoding="utf-8"))
+        info = data["info"]
+        trace_issues, rows = check_traceability_pure(
+            data["spec_text"],
+            data["frontend_exists"],
+            info.get("body") or "",
+            data["diff"],
+            data["existing_test_text"],
+        )
+    else:
+        if not args.pr:
+            parser.error("--pr is required unless --from-json is given")
+        info = pr_view(args.pr)
+        trace_issues, rows = check_traceability(args.pr, info)
 
     issues: list[str] = []
     issues.extend(check_ci_green(info))
     issues.extend(check_branch_and_mode(info))
-    trace_issues, rows = check_traceability(args.pr, info)
     issues.extend(trace_issues)
 
     if issues:
