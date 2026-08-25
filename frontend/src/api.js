@@ -58,3 +58,9 @@ export const labelsApi = {
   delete: (id) => request(`/labels/${id}`, { method: "DELETE" }),
   search: (q) => request(`/labels/search?q=${encodeURIComponent(q)}`),
 };
+
+export const tagsApi = {
+  list: () => request("/tags/recent"),
+  create: (name) => request("/tags", { method: "POST", body: JSON.stringify({ name }) }),
+  search: (q) => request(`/tags/search?q=${encodeURIComponent(q)}`),
+};

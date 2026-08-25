@@ -5,6 +5,7 @@ import Bookmarks from "./components/Bookmarks";
 import Widgets from "./components/Widgets";
 import Reminders from "./components/Reminders";
 import Labels from "./components/Labels";
+import Tags from "./components/Tags";
 import "./App.css";
 
 const TABS = {
@@ -14,6 +15,7 @@ const TABS = {
   widgets: Widgets,
   reminders: Reminders,
   labels: Labels,
+  tags: Tags,
 };
 
 export default function App() {
