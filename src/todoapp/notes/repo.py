@@ -43,6 +43,10 @@ class NoteRepo:
         self._conn.execute("UPDATE notes SET body = ? WHERE id = ?", (body, note_id))
         self._conn.commit()
 
+    def delete(self, note_id: str) -> None:
+        self._conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+        self._conn.commit()
+
     @staticmethod
     def _to_note(row: tuple) -> Note:
         id_, title, body, created_at = row

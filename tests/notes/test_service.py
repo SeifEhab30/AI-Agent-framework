@@ -42,3 +42,14 @@ def test_update_body_can_clear_to_empty(service: NoteService):
     note = service.create_note(NoteCreate(title="groceries", body="milk"))
     updated = service.update_body(note.id, "")
     assert updated.body == ""
+
+
+def test_delete_note(service: NoteService):
+    note = service.create_note(NoteCreate(title="groceries"))
+    service.delete_note(note.id)
+    assert service.list_notes() == []
+
+
+def test_delete_missing_raises(service: NoteService):
+    with pytest.raises(NotFoundError):
+        service.delete_note("nope")
