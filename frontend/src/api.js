@@ -42,3 +42,11 @@ export const widgetsApi = {
   setValue: (id, value) =>
     request(`/widgets/${id}`, { method: "POST", body: JSON.stringify({ value }) }),
 };
+
+export const remindersApi = {
+  list: () => request("/reminders"),
+  create: (message, dueAt) =>
+    request("/reminders", { method: "POST", body: JSON.stringify({ message, due_at: dueAt }) }),
+  markDone: (id) => request(`/reminders/${id}/done`, { method: "POST" }),
+  delete: (id) => request(`/reminders/${id}`, { method: "DELETE" }),
+};

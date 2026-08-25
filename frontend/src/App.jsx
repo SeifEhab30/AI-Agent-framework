@@ -3,6 +3,7 @@ import Todos from "./components/Todos";
 import Notes from "./components/Notes";
 import Bookmarks from "./components/Bookmarks";
 import Widgets from "./components/Widgets";
+import Reminders from "./components/Reminders";
 import "./App.css";
 
 const TABS = {
@@ -10,6 +11,7 @@ const TABS = {
   notes: Notes,
   bookmarks: Bookmarks,
   widgets: Widgets,
+  reminders: Reminders,
 };
 
 export default function App() {
