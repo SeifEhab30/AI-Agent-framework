@@ -61,13 +61,13 @@ PR's branch. Nothing is written to disk, so there is nothing to clean up.
 
 ## Status
 
-**Drafted, not yet created as a live trigger.** Before this becomes real
-(a `RemoteTrigger action=create` call), it needs an explicit go-ahead —
-this agent's one action is merging to `master`, a bigger blast radius than
-anything Maintenance or Builder do (their mistakes sit in an unmerged PR;
-this agent's mistake is already on `master`). Same "prove narrow before
-trusting further" discipline as the other three, just applied before the
-first run instead of after it.
+**Live trigger exists** (`trig_01EJfBr4rVxfonFknmBaCDn2`, manual-only, no
+cron — same prove-by-hand-first discipline the other three earned before
+any of them got a schedule). Created 2026-08-25, not yet run. This agent's
+one action is merging to `master`, a bigger blast radius than anything
+Maintenance or Builder do (their mistakes sit in an unmerged PR; this
+agent's mistake is already on `master`) — first run should be watched,
+not fired and forgotten.
 
 **Known gaps:**
 - Not yet run against a real PR.
@@ -113,6 +113,19 @@ List candidate PRs -> run the mechanical script per PR -> do the semantic tracea
 
 ## Deferred to a later version (not in this draft)
 
+- **End-state goal (stated by the user 2026-08-25, not yet designed):**
+  this agent should eventually review *every* open PR in the repo, not
+  only Builder's `agentic-build/*` ones -- human-authored PRs included --
+  and merge what's eligible, with an explicit exception for PRs judged
+  "critical" (left for a human, never auto-merged). The trigger mechanism
+  needs to widen from "Builder branch pattern" to "any PR event"
+  accordingly. **Blocking open question:** "critical" has no concrete,
+  mechanically-checkable definition yet -- must be defined (e.g. by path,
+  by size, by author, by touching security/infra/auth code) before this
+  widening happens, same bar every other eligibility boundary in this
+  repo has had to clear before it shipped. Today's `frontend_only`/
+  Builder-only scope is the deliberately narrow starting point this
+  end-state builds toward, not a separate, smaller design.
 - Widening eligibility to `existing_domain` and `frontend_update` builds, once `frontend_only` has been proven live at least once with a correct outcome (mirrors every prior "prove narrow, then widen" step in this repo).
 - `new_domain` builds are the largest blast radius (all six backend layers + frontend) and are not expected to become auto-mergeable soon, if ever -- not scheduled.
 - A cron/scheduled trigger, or wiring this agent to fire automatically after the Builder opens a PR (e.g. via the Dispatcher, or a GitHub Actions `pull_request` trigger calling `routine-fire.yml`-style relay for this agent too). Manual-only until proven by hand at least once.
