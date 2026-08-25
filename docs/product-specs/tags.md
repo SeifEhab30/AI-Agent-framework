@@ -1,7 +1,6 @@
 # Tags — Product Spec
 
 Verified: 2026-08-25
-Frontend: Ready for implementation
 
 ## What it does
 A minimal tag: a short name attached to nothing in particular yet.
