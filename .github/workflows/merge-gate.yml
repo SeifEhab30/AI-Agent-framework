@@ -1,0 +1,75 @@
+name: Merge Gate
+
+# Runtime-agnostic by design: the boundary between "may read/judge" and "may
+# write/merge" lives in this file's job-level `permissions:`, not in any
+# agent-specific tool allowlist. review's job token can't write to the repo
+# or merge anything no matter what scripts/run-agent.sh calls internally --
+# swapping the CLI inside run-agent.sh never needs this file to change.
+# merge's job token can write, but never runs an agent at all -- it only
+# acts on review's own structured output.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  review:
+    # Only Builder's own PRs are candidates -- pull_request has no head-branch
+    # filter, so this is enforced in-job instead.
+    if: startsWith(github.head_ref, 'agentic-build/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      verdict: ${{ steps.gate.outputs.verdict }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run merge gate checks
+        id: gate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Run exactly once -- the semantic review step calls an LLM, so
+          # re-running to "get the output again" would double the cost and
+          # could disagree with itself on a non-deterministic call.
+          if python scripts/check_merge_gate.py --pr "${{ github.event.pull_request.number }}" | tee gate_output.txt; then
+            echo "verdict=eligible" >> "$GITHUB_OUTPUT"
+          else
+            echo "verdict=blocked" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Comment findings if blocked
+        if: steps.gate.outputs.verdict == 'blocked'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          {
+            echo "**Merge gate: not eligible for auto-merge.**"
+            echo
+            echo '```'
+            cat gate_output.txt
+            echo '```'
+          } | gh pr comment "${{ github.event.pull_request.number }}" --body-file -
+
+  merge:
+    needs: review
+    if: needs.review.outputs.verdict == 'eligible'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge the eligible PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr merge "${{ github.event.pull_request.number }}" --squash --delete-branch
