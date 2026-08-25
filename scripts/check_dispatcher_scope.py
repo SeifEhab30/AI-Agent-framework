@@ -19,8 +19,8 @@ Within an explicit time window (--since/--until, always caller-supplied
 -- this script does not and cannot infer a Dispatcher session's actual
 start/end boundary from run history alone, since GitHub's run objects
 carry no session-correlation id):
-- every routine-fire.yml dispatch's target must be 'maintenance' or
-  'builder'
+- every routine-fire.yml dispatch's target must be 'maintenance',
+  'builder', or 'merge_gate'
 - no target may appear more than once (the FORBIDDEN ACTIONS rule
   against firing an agent twice in one run, checked here as a
   same-window proxy, since actual session boundaries aren't visible
@@ -56,7 +56,7 @@ from datetime import datetime
 # field (routine-fire.yml's own `name: Routine Fire Relay`), not its file
 # path -- there's no file-path field available in the run list JSON.
 FIRE_WORKFLOW = "Routine Fire Relay"
-VALID_TARGETS = {"maintenance", "builder"}
+VALID_TARGETS = {"maintenance", "builder", "merge_gate"}
 TARGET_LINE_PATTERN = re.compile(r"firing target=(\S+)")
 
 
