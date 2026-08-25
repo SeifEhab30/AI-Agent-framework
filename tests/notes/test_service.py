@@ -55,3 +55,14 @@ def test_search_matches_case_insensitive_substring(service: NoteService):
 def test_search_no_match_returns_empty(service: NoteService):
     service.create_note(NoteCreate(title="Example Docs"))
     assert service.search("nope") == []
+
+
+def test_delete_note(service: NoteService):
+    note = service.create_note(NoteCreate(title="groceries"))
+    service.delete_note(note.id)
+    assert service.list_notes() == []
+
+
+def test_delete_missing_raises(service: NoteService):
+    with pytest.raises(NotFoundError):
+        service.delete_note("nope")
