@@ -19,12 +19,18 @@ Checks, in order:
    auto-mergeable yet, same "prove narrow, then widen" discipline as every
    other capability this repo has added (dispatcher: 2 agents before a
    3rd; Builder: new_domain before frontend modes, each proven separately).
-3. Traceability table structural check: the PR body's requirement-to-test
-   table has one row per spec bullet, and each named test function
-   actually appears (as a genuinely added line) in the diff. A lower bound
-   only, same caveat check_builder_scope.py's own check_traceability
-   documents -- proves the row isn't fabricated, not that the test
-   actually covers what the bullet claims.
+3. Traceability table structural check: the PR body's table lists every
+   spec requirement for the target domain (not just what changed this
+   run), one row per requirement plus three fixed frontend rows whenever
+   the domain has a frontend, each marked Modified (a genuinely new test
+   in this diff) or Not modified (an existing test, from an earlier PR,
+   still covering it). Row count must match the domain's actual
+   requirement count; each Modified row's test must be newly added in the
+   diff; each Not modified row's test must actually exist in the repo at
+   this PR's head commit. A lower bound only, same caveat
+   check_builder_scope.py's own check_traceability documents -- proves
+   the row isn't fabricated, not that the test actually covers what the
+   requirement claims.
 
 Once every mechanical check above passes, one further step runs: a
 single-shot, read-only semantic review (via scripts/run-agent.sh -- see
@@ -49,9 +55,12 @@ import sys
 from pathlib import Path
 
 ELIGIBLE_BRANCH_PREFIX = "agentic-build/"
-TABLE_ROW_PATTERN = re.compile(r"^\|\s*(.+?)\s*\|\s*`?([A-Za-z_][\w]*)`?\s*\|\s*$", re.MULTILINE)
+FRONTEND_ROW_COUNT = 3  # initial render, create-success, create-validation-error
+TABLE_ROW_PATTERN = re.compile(
+    r"^\|\s*(.+?)\s*\|\s*(Modified|Not modified)\s*\|\s*(.+?)\s*\|\s*$",
+    re.MULTILINE | re.IGNORECASE,
+)
 SPEC_BULLET_PATTERN = re.compile(r"^- (?:\[ready\]\s*)?(.+)$", re.MULTILINE)
-ADDED_TEST_FUNC_PATTERN = re.compile(r"^\+def (test_\w+)", re.MULTILINE)
 REVIEW_PROMPT_TEMPLATE = (
     Path(__file__).resolve().parent.parent / "docs" / "references" / "merge-gate-review-prompt.md"
 )
@@ -129,36 +138,76 @@ def spec_text_at(pr: int, path: str) -> str:
     return _git("show", f"FETCH_HEAD:{path}")
 
 
-def extract_test_body(diff: str, fn: str) -> str:
-    """The added (`+`-prefixed) lines of one test function's diff hunk, stripped
-    of the leading `+`. Stops at the next added `def` line or hunk boundary."""
+def extract_test_body(diff: str, name: str) -> str:
+    """The added (`+`-prefixed) lines of one test's diff hunk, stripped of the
+    leading `+`. Works for a Python `def <name>(` line or, for a frontend JS
+    test, any added line containing <name> as a literal substring (e.g. a
+    test('...', ...) title) -- collects from that marker line until the next
+    added `def` line or a hunk boundary."""
     lines = diff.splitlines()
     body_lines: list[str] = []
     collecting = False
     for line in lines:
-        if line.startswith(f"+def {fn}("):
+        is_marker = line.startswith("+") and (f"def {name}(" in line or name in line)
+        if is_marker and not collecting:
             collecting = True
             body_lines.append(line[1:])
             continue
         if collecting:
-            if line.startswith("+def ") or line.startswith("@@"):
+            if line.startswith("@@") or (line.startswith("+def ") and name not in line):
                 break
             if line.startswith("+"):
                 body_lines.append(line[1:])
     return "\n".join(body_lines)
 
 
+def head_file_text(path: str) -> str:
+    """File content at the PR's head commit (FETCH_HEAD must already be set --
+    see spec_text_at), or "" if the path doesn't exist there."""
+    result = subprocess.run(
+        ["git", "show", f"FETCH_HEAD:{path}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout if result.returncode == 0 else ""
+
+
+def frontend_component_exists(pr: int, domain: str) -> bool:
+    """Whether this domain has a frontend at the PR's head commit -- already
+    built (frontend_only/new_domain runs), already existed
+    (frontend_update/existing_domain), or genuinely none yet. Determines
+    whether the traceability table should carry the three fixed frontend
+    rows."""
+    _git("fetch", "origin", f"pull/{pr}/head")
+    result = subprocess.run(
+        ["git", "cat-file", "-e", f"FETCH_HEAD:frontend/src/components/{domain.capitalize()}.jsx"],
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def check_traceability(pr: int, info: dict) -> tuple[list[str], list[dict]]:
-    """Returns (issues, rows). Each row is {bullet, function, body} for a
-    traceability-table entry whose named function was genuinely added --
-    the set the semantic review step needs, already assembled once here so
-    it isn't re-derived a second time."""
+    """Returns (issues, rows). Table convention (builder-prompt.md): one row
+    per spec requirement for the target domain, ALWAYS -- not just what
+    changed this run -- plus three fixed frontend rows whenever the domain
+    has a frontend. Each row is Modified (a genuinely new test, this diff)
+    or Not modified (an existing test, from an earlier PR, unchanged). This
+    is what makes the table meaningful for frontend_only/frontend_update
+    runs: most or all backend rows there are legitimately Not modified,
+    which is a complete accurate table, not a red flag.
+
+    `rows` returned is only the Modified ones -- what the semantic review
+    step needs to judge. Not modified rows are already covered by CI
+    passing on tests that already existed; nothing new to judge there."""
     spec_path = spec_path_for(info)
     if spec_path is None:
         return (
             ["no docs/product-specs/*.md file in this diff -- can't locate the target spec"],
             [],
         )
+    domain = spec_path.rsplit("/", 1)[-1].removesuffix(".md")
 
     try:
         spec_text = spec_text_at(pr, spec_path)
@@ -166,30 +215,46 @@ def check_traceability(pr: int, info: dict) -> tuple[list[str], list[dict]]:
         return ([f"could not read {spec_path} at PR head commit"], [])
 
     requirement_count = len(SPEC_BULLET_PATTERN.findall(spec_text))
+    frontend_rows_expected = FRONTEND_ROW_COUNT if frontend_component_exists(pr, domain) else 0
+    expected_total = requirement_count + frontend_rows_expected
 
     body = info.get("body") or ""
-    table_rows = TABLE_ROW_PATTERN.findall(body)
-    # header/separator rows ("---", "Spec bullet") aren't real requirement rows
-    skip = ("test", "test_function")
-    table_rows = [(bullet, fn) for bullet, fn in table_rows if fn.lower() not in skip]
+    table_rows = TABLE_ROW_PATTERN.findall(body)  # (requirement, status, test)
 
     issues = []
-    if len(table_rows) < requirement_count:
+    if len(table_rows) != expected_total:
         issues.append(
-            f"{spec_path}: {requirement_count} requirement bullet(s) but only "
-            f"{len(table_rows)} row(s) in the PR body's traceability table"
+            f"{spec_path}: expected {expected_total} traceability row(s) "
+            f"({requirement_count} spec requirement(s) + {frontend_rows_expected} "
+            f"frontend case(s)) but PR body has {len(table_rows)}"
         )
 
     diff = _gh("pr", "diff", str(pr))
-    added_tests = set(ADDED_TEST_FUNC_PATTERN.findall(diff))
+    added_lines = "\n".join(line for line in diff.splitlines() if line.startswith("+"))
+    existing_test_text = head_file_text(f"tests/{domain}/test_service.py") + head_file_text(
+        f"frontend/src/components/{domain.capitalize()}.test.jsx"
+    )
+
     rows = []
-    for bullet, fn in table_rows:
-        if fn not in added_tests:
-            issues.append(
-                f"traceability table names '{fn}' but no `def {fn}` was added in this diff"
+    for requirement, status, test_ref in table_rows:
+        name = test_ref.strip("`'\" ")
+        if status.strip().lower() == "modified":
+            if name not in added_lines:
+                issues.append(
+                    f"traceability table marks '{requirement}' Modified, naming "
+                    f"'{name}', but no added line in the diff contains it"
+                )
+                continue
+            rows.append(
+                {"bullet": requirement, "function": name, "body": extract_test_body(diff, name)}
             )
-            continue
-        rows.append({"bullet": bullet, "function": fn, "body": extract_test_body(diff, fn)})
+        else:
+            if name not in existing_test_text:
+                issues.append(
+                    f"traceability table marks '{requirement}' Not modified, naming "
+                    f"'{name}', but it doesn't appear in the existing test files at "
+                    f"this PR's head commit"
+                )
 
     return issues, rows
 
@@ -267,8 +332,8 @@ def main() -> int:
 
     if not rows:
         print(
-            "check_merge_gate: mechanical checks clean but no traceability rows "
-            "-- nothing to review."
+            "check_merge_gate: mechanical checks clean but no 'Modified' "
+            "traceability rows -- nothing new to review this run."
         )
         return 1
 
