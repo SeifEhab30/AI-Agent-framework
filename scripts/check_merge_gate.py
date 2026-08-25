@@ -237,23 +237,34 @@ def check_traceability(pr: int, info: dict) -> tuple[list[str], list[dict]]:
 
     rows = []
     for requirement, status, test_ref in table_rows:
-        name = test_ref.strip("`'\" ")
-        if status.strip().lower() == "modified":
-            if name not in added_lines:
+        # builder-prompt.md's Test column format: one or more bare names,
+        # comma-separated when a requirement needs more than one test --
+        # split and match each individually rather than the whole cell as
+        # one literal string.
+        names = [n.strip("`'\" ") for n in test_ref.split(",")]
+        modified = status.strip().lower() == "modified"
+        for name in names:
+            if not name:
+                continue
+            haystack = added_lines if modified else existing_test_text
+            if name not in haystack:
+                where = (
+                    "no added line in the diff contains it"
+                    if modified
+                    else ("it doesn't appear in the existing test files at this PR's head commit")
+                )
                 issues.append(
-                    f"traceability table marks '{requirement}' Modified, naming "
-                    f"'{name}', but no added line in the diff contains it"
+                    f"traceability table marks '{requirement}' "
+                    f"{'Modified' if modified else 'Not modified'}, naming '{name}', but {where}"
                 )
                 continue
-            rows.append(
-                {"bullet": requirement, "function": name, "body": extract_test_body(diff, name)}
-            )
-        else:
-            if name not in existing_test_text:
-                issues.append(
-                    f"traceability table marks '{requirement}' Not modified, naming "
-                    f"'{name}', but it doesn't appear in the existing test files at "
-                    f"this PR's head commit"
+            if modified:
+                rows.append(
+                    {
+                        "bullet": requirement,
+                        "function": name,
+                        "body": extract_test_body(diff, name),
+                    }
                 )
 
     return issues, rows
