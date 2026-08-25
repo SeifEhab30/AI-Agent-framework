@@ -19,6 +19,7 @@ on:
         options:
           - maintenance
           - builder
+          - merge_gate
 
 permissions: {}
 
@@ -31,6 +32,7 @@ jobs:
           TARGET: ${{ inputs.target }}
           MAINTENANCE_FIRE_TOKEN: ${{ secrets.MAINTENANCE_FIRE_TOKEN }}
           BUILDER_FIRE_TOKEN: ${{ secrets.BUILDER_FIRE_TOKEN }}
+          MERGE_GATE_FIRE_TOKEN: ${{ secrets.MERGE_GATE_FIRE_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -45,8 +47,12 @@ jobs:
               TRIGGER_ID="trig_01H6QZXRUi4S2zdY2X9R2ZPy"
               TOKEN="$BUILDER_FIRE_TOKEN"
               ;;
+            merge_gate)
+              TRIGGER_ID="trig_01EJfBr4rVxfonFknmBaCDn2"
+              TOKEN="$MERGE_GATE_FIRE_TOKEN"
+              ;;
             *)
-              echo "::error::Unknown target '$TARGET' -- must be maintenance or builder"
+              echo "::error::Unknown target '$TARGET' -- must be maintenance, builder, or merge_gate"
               exit 1
               ;;
           esac
