@@ -1,12 +1,17 @@
-name: Merge Gate
+name: Merge Gate (advisory only)
 
-# Runtime-agnostic by design: the boundary between "may read/judge" and "may
-# write/merge" lives in this file's job-level `permissions:`, not in any
-# agent-specific tool allowlist. review's job token can't write to the repo
-# or merge anything no matter what scripts/run-agent.sh calls internally --
-# swapping the CLI inside run-agent.sh never needs this file to change.
-# merge's job token can write, but never runs an agent at all -- it only
-# acts on review's own structured output.
+# PAUSED as the merge mechanism (2026-08-25): the actual merge decision and
+# action now live in the Merge Gate Routine (docs/references/merge-gate-
+# prompt.md), a RemoteTrigger-fired Claude Code session -- same model as
+# Maintenance/Builder/Dispatcher, chosen so the semantic traceability
+# judgment doesn't need a separate billed API key or a since-retired free
+# option (GitHub Models returned 410 github_models_retirement_brownout on
+# a live test). This workflow no longer merges anything; it only runs the
+# mechanical checks (scripts/check_merge_gate.py --mechanical-only) and
+# comments the result, as an early signal before the Routine even looks at
+# the PR. The github-models/claude adapter path in scripts/run-agent.sh and
+# the read/write job-permission split are kept as-is for reference -- worth
+# revisiting once a durable no-separate-billing model option exists.
 
 on:
   pull_request:
@@ -33,14 +38,18 @@ jobs:
       - name: Run merge gate checks
         id: gate
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # Run exactly once -- the semantic review step calls an LLM, so
-          # re-running to "get the output again" would double the cost and
-          # could disagree with itself on a non-deterministic call.
-          if python scripts/check_merge_gate.py --pr "${{ github.event.pull_request.number }}" | tee gate_output.txt; then
+          # --mechanical-only: no LLM call wired in yet. GitHub Models (the
+          # planned no-separate-billing option) turned out to be mid-
+          # retirement when tested (410 github_models_retirement_brownout);
+          # the claude case needs a real ANTHROPIC_API_KEY that isn't set up.
+          # See merge-gate-prompt.md's Known gaps. Semantic traceability is
+          # not enforced until one of those is resolved -- only the
+          # mechanical checks (CI green, frontend_only shape, traceability
+          # row/function structure) gate eligibility right now.
+          if python scripts/check_merge_gate.py --pr "${{ github.event.pull_request.number }}" --mechanical-only | tee gate_output.txt; then
             echo "verdict=eligible" >> "$GITHUB_OUTPUT"
           else
             echo "verdict=blocked" >> "$GITHUB_OUTPUT"
@@ -59,17 +68,6 @@ jobs:
             echo '```'
           } | gh pr comment "${{ github.event.pull_request.number }}" --body-file -
 
-  merge:
-    needs: review
-    if: needs.review.outputs.verdict == 'eligible'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Merge the eligible PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh pr merge "${{ github.event.pull_request.number }}" --squash --delete-branch
+  # No merge job. Merge authority lives in the Merge Gate Routine session
+  # now -- see the file-header note above. This workflow never has
+  # contents:write.

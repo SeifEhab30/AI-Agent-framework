@@ -34,7 +34,7 @@ not merely that it exists. That's a judgment CI's mechanical suite is
 structurally unable to make; this script can only clear the mechanical
 floor, so it hands that one question to a model rather than skipping it.
 Pass --mechanical-only to stop before this step (e.g. for local testing
-without an ANTHROPIC_API_KEY available).
+without agent-CLI credentials available).
 
 Usage:
   python scripts/check_merge_gate.py --pr 73
