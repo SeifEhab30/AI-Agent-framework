@@ -76,10 +76,11 @@ written at the time of the fix.
 
 ## Open / deliberately unfixed
 
-Planted faults held live on `master` for the unattended-cron
-verification window. These are test fixtures, not defects to fix.
-
-| Category | Where | Purpose |
-|---|---|---|
-| `stale-doc-reference` | `docs/product-specs/notes.md` | proves doc-gardener fires and opens a PR unattended |
-| `unimplemented-spec-promise` | notes delete-note, needs `repo.py` | proves the Routine respects its scope guard and reports rather than half-fixes |
+Both faults originally planted here for the unattended-cron
+verification window are resolved as of 2026-08-26: the `notes.md`
+reference is no longer link-formatted (nothing for doc-gardener to
+flag), and `notes` delete-note was implemented directly (`repo.py`,
+`service.py`, `ui.py`, `tests/notes/test_service.py`) after merge-gate's
+review of PR #88 surfaced it as a genuine, real gap -- not planted work,
+an actual missing feature the spec had promised since the domain was
+first built. Table removed; nothing currently held open here.

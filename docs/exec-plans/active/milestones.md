@@ -361,7 +361,107 @@ resolved, so `master` stayed untouched for that test. Since landed on
 
 **Status:** Complete.
 
+## M14 — Builder, Dispatcher, and Merge Gate Routines; five domains from four (done)
+
+Consolidated retrospective entry covering everything since M13 that was
+never written up as its own milestone — a large, multi-session gap.
+Deliberately summary-level rather than session-by-session; the real
+detail lives in `docs/references/*.md`'s own Status sections and the
+merged PR history.
+
+**Two new domains, both built by the Builder Routine, not by hand:**
+`labels` (name + `#RRGGBB` color, search, delete) and `tags` (name,
+duplicate names allowed, newest-first list, search) — proving the
+new-domain build path end-to-end for the first time. `reminders`
+(message + future `due_at`, mark-done, delete) followed the same path
+earlier and is recorded in its own spec's history note.
+
+**Builder Routine** (`builder-prompt.md`): a second, distinct agent
+from Maintenance — builds new features from human-authored specs
+instead of only repairing drift. Discovery covers new-domain,
+frontend-only, frontend-update, and existing-domain `[ready]` targets,
+each with its own scope guard mechanically enforced by
+`check_builder_scope.py`. The traceability convention went through two
+real false-positive fixes before landing on its current form: an
+early version only required tests for what changed *that run*
+(false-flagged legitimate frontend-only builds with zero new backend
+tests), then a formatting convention broke the literal-substring
+matcher even on correct tests — both fixed by widening to a
+full-inventory table (every requirement, every run, Modified/Not
+modified) with an exact, mechanically-matched Test column format.
+
+**Dispatcher Routine** (`dispatcher-prompt.md`): a third agent —
+decides whether Maintenance, Builder, or Merge Gate likely has real
+work and fires only those, replacing per-agent cron schedules that pay
+full session cost even on an empty week. Three independent candidate
+checks (spec readiness markers, diff-since-last-PR plus doc_gardener
+staleness, and — once Merge Gate existed — unreviewed open PRs). Later
+gained a wait step: after firing Maintenance/Builder it polls (real
+wall-clock time, not poll count, after an early version's timing bug)
+for their PR to land, then checks Merge Gate candidacy in the same run
+instead of depending on some later, unrelated Dispatcher fire.
+
+**Merge Gate Routine** (`merge-gate-prompt.md`): a fourth agent, the
+only one that writes to `master` — decides whether an open PR is safe
+to auto-merge. Went through a real architecture pivot: a first version
+put the capability boundary in GitHub Actions job permissions with an
+LLM call from `run-agent.sh` for the one judgment call scripts can't
+make (does a named test really prove its spec bullet); the free model
+option (GitHub Models) turned out to be mid-retirement on a live test,
+and a paid API key was a real cost the other three agents don't pay
+(they're Claude Code sessions, not a script calling an API). Pivoted
+to the same RemoteTrigger Routine shape as the other three — the
+session itself *is* the model call. Proven live repeatedly: an early
+`frontend_only`-only version, widened to `existing_domain`/
+`frontend_update` once proven, then widened again to any branch/author
+(not just Builder's own PRs) with a path-based critical-path gate
+added first (CI/workflow config, the gate scripts themselves, agent
+prompts, dependency/build config — never auto-mergeable, checked ahead
+of everything else). A live test the same day it widened caught a real
+bug this way: a Maintenance PR bumping a stale `Verified:` date was
+correctly blocked because it touched `docs/references/`.
+
+**A real product bug found through the mechanism, not planted:** the
+full-inventory traceability convention, applied to `notes`, surfaced
+that "Delete a note by id" had been promised in the spec since the
+domain was first built (M2) but never actually implemented -- `notes`
+had list/create/update but no delete. Fixed directly (mirrors the
+`todos`/`widgets` delete pattern), not through Builder, since the gap
+predated Builder's existence.
+
+**Later fixes to all four agents' own prompts**, after an external
+review of the prompts themselves: Merge Gate's semantic test-judgment
+gained a third "uncertain" outcome (previously forced every row into
+true/false, risking a default-to-true on genuine ambiguity) and a
+check that a "Not modified" row's test wasn't actually touched by the
+diff (previously only checked the test still existed, not that it was
+left alone); Maintenance's domain review is now scoped to what changed
+since its last run instead of re-deriving all seven domains from
+scratch every time, with a weekly full-sweep fallback so a wrongly
+"clean" domain doesn't stay unreviewed forever; a stale-trigger bug was
+also found this way — Builder's live trigger had been running an
+outdated prompt for at least a full session before an unrelated edit's
+audit caught it, prompting a standing rule to re-sync all four live
+triggers on any prompt-doc change, not just the one touched.
+
+**Status:** Complete as of 2026-08-26. `frontend_only`/`frontend_update`/
+`existing_domain` diff shapes are Merge-Gate-eligible; `new_domain`
+still is not, by design (largest blast radius). Universal PR review
+(any PR, not just these four agents' own) is a stated end goal, not
+yet built.
+
 ## Backlog (unscheduled, not yet milestones)
 
-(none — all four original practices, CI/branch-protection hardening, and
-the agentic maintenance loop are now built and verified)
+- Universal PR review for Merge Gate: any PR, not just Builder's/
+  Maintenance's own, including a mechanically-checkable definition of
+  "critical" for what's always left to a human (path-based, built
+  2026-08-26 -- CI/workflow config, gate scripts, agent prompts,
+  dependency/build config). Branch/author restriction already dropped;
+  the trigger surface itself is still Dispatcher polling, not a
+  `pull_request`-event webhook.
+- Frontend backfill for `reminders`/`labels`/`tags` (built before
+  frontend became mandatory for new-domain builds) -- deliberately
+  deferred, not an oversight.
+- Merge Gate's semantic test-judgment has never been exercised against
+  a genuinely wrong test in a live run -- every real run so far either
+  passed cleanly or was rejected by an earlier mechanical check first.
