@@ -1,3 +1,5 @@
+Verified: 2026-08-26
+
 This file is the literal prompt `scripts/check_merge_gate.py` sends to
 `scripts/run-agent.sh` for the one judgment call CI's mechanical checks
 cannot make: whether a named test genuinely proves its paired spec bullet,

@@ -1,6 +1,6 @@
 # Widgets — Product Spec
 
-Verified: 2026-08-18
+Verified: 2026-08-26
 
 ## What it does
 A minimal dashboard widget: a labeled numeric value (e.g. a counter or
