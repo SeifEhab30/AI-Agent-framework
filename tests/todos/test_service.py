@@ -54,3 +54,16 @@ def test_delete_todo(service: TodoService):
 def test_delete_missing_raises(service: TodoService):
     with pytest.raises(NotFoundError):
         service.delete_todo("nope")
+
+
+def test_search_matches_case_insensitive_substring(service: TodoService):
+    service.create_todo(TodoCreate(title="Buy Milk"))
+    service.create_todo(TodoCreate(title="Walk the dog"))
+    results = service.search("MILK")
+    assert len(results) == 1
+    assert results[0].title == "Buy Milk"
+
+
+def test_search_no_match_returns_empty(service: TodoService):
+    service.create_todo(TodoCreate(title="Buy Milk"))
+    assert service.search("nope") == []
