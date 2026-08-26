@@ -52,7 +52,7 @@ def test_set_value_to_zero(service: WidgetService):
 def test_search_matches_case_insensitive_substring(service: WidgetService):
     service.create_widget(WidgetCreate(label="Signups today", value=42))
     service.create_widget(WidgetCreate(label="Errors", value=0))
-    results = service.search("signups")
+    results = service.search("S TOD")
     assert len(results) == 1
     assert results[0].label == "Signups today"
 
