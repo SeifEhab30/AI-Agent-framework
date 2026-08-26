@@ -1,6 +1,6 @@
 # Builder Routine — standing prompt
 
-Verified: 2026-08-24
+Verified: 2026-08-26
 
 This file is the **source of truth** for the Builder Routine's
 instructions — a second, separate scheduled agent from the maintenance
@@ -150,6 +150,7 @@ STARTING STATE
 - Every domain under src/todoapp/<domain>/ has exactly 6 layer files: types.py, config.py, repo.py, service.py, runtime.py, ui.py.
 - Domains register in 3 places (full detail under ALLOWED ACTIONS): pyproject.toml contracts, app.py mount block, MAP.md row. scripts/check_golden_rules.py rule 5 fails CI if any is missing -- this IS your definition of "a complete domain."
 - No pre-installed venv. First action, always: `python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt -e . ruff import-linter`. Use `.venv/bin/python` / `.venv/bin/ruff` for every command after.
+- Before VALIDATION's `doc_gardener.py` run: `git rev-parse --is-shallow-repository`. If it prints `true`, run `git fetch --unshallow`. `doc_gardener.py`'s `Verified:`-date staleness check silently skips on a shallow clone -- no error, just fewer findings than a real check, indistinguishable in the output from an honest "nothing stale." A skipped check must never be reported as a clean one (found 2026-08-26, same gap already fixed in `routine-prompt.md`/`dispatcher-prompt.md` -- never wired here until now).
 - Read first, in order: MAP.md, docs/references/conventions.md, docs/architecture/layering.md, docs/references/builder-prompt.md (your scope guard -- follow exactly), every docs/product-specs/*.md, one existing domain end-to-end (e.g. src/todoapp/notes/*.py + tests/notes/test_service.py) as your backend template, and for a new-domain target only, frontend/src/components/Bookmarks.jsx + Bookmarks.test.jsx as your frontend template.
 
 DISCOVERY -- find exactly ONE target, every run. Mirrors the maintenance Routine's spec-vs-code comparison but inverts the policy: it only reports or point-fixes; you implement fully.
