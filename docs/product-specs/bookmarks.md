@@ -1,6 +1,6 @@
 # Bookmarks — Product Spec
 
-Verified: 2026-08-25
+Verified: 2026-08-26
 
 ## What it does
 A minimal bookmark. A bookmark has a URL and a title.
