@@ -34,13 +34,3 @@ class LabelService:
         if label is None:
             raise NotFoundError(f"label {label_id} not found")
         self._repo.delete(label_id)
-
-    def rename(self, label_id: str, name: str) -> Label:
-        label = self._repo.get(label_id)
-        if label is None:
-            raise NotFoundError(f"label {label_id} not found")
-        name = name.strip()
-        if not name:
-            raise ValidationError("name must not be empty")
-        self._repo.set_name(label_id, name)
-        return self._repo.get(label_id)
