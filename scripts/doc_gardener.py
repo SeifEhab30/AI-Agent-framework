@@ -42,7 +42,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = REPO_ROOT / "docs"
 REPORT_PATH = DOCS_DIR / "quality-score" / "report.md"
 
-PATH_PATTERN = re.compile(r"(?:`|\[.*?\]\()((?:src|tests|scripts|docs)/[\w./-]+)")
+# Matches a path immediately after a backtick, an opening `[` (this repo's
+# own convention is self-descriptive link text, e.g.
+# `[docs/x/y.md](../relative/path/to/y.md)` -- the docs-prefixed string is
+# the link TEXT, not the href, so a pattern that only looked at `](` missed
+# every one of these; found 2026-08-26 when a real doc edit that should have
+# made several specs show as stale produced zero findings), or an opening
+# `(` in prose.
+PATH_PATTERN = re.compile(r"[`\[(]((?:src|tests|scripts|docs)/[\w./-]+)")
 MD_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(((?:src|tests|scripts|docs)/[\w./-]+)\)")
 VERIFIED_PATTERN = re.compile(r"Verified:\s*(\d{4}-\d{2}-\d{2})")
 
