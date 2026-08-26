@@ -411,10 +411,11 @@ def run_semantic_review(rows: list[dict]) -> list[str]:
 
     if verdict.get("eligible"):
         return []
-    return [
-        f"semantic review: '{row.get('bullet')}' -- {row.get('reason')}"
-        for row in verdict.get("failing_rows", [])
-    ] or ["semantic review returned eligible=false with no failing_rows detail"]
+    issues = []
+    for row in verdict.get("failing_rows", []):
+        label = "FAILS" if row.get("verdict") == "fails" else "UNCERTAIN, needs human judgment"
+        issues.append(f"semantic review [{label}]: '{row.get('bullet')}' -- {row.get('reason')}")
+    return issues or ["semantic review returned eligible=false with no failing_rows detail"]
 
 
 def main() -> int:
