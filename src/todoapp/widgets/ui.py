@@ -15,6 +15,10 @@ def build_router(service: WidgetService, emit_event: Callable[..., None]) -> API
     def list_widgets() -> list[Widget]:
         return service.list_widgets()
 
+    @router.get("/search", response_model=list[Widget])
+    def search_widgets(q: str) -> list[Widget]:
+        return service.search(q)
+
     @router.post("", response_model=Widget)
     def create_widget(data: WidgetCreate) -> Widget:
         try:
