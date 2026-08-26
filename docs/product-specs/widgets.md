@@ -13,6 +13,7 @@ stat tile), distinct from the `todos` domain (which used to be called
 - List all widgets.
 - Set a widget's value to a new number.
 - Delete a widget by id.
+- [ready] Search widgets by a case-insensitive substring match on label.
 
 ## Non-goals
 No auth, no multi-user separation, no charts/history of past values, no
