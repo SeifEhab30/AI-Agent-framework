@@ -49,6 +49,19 @@ def test_set_value_to_zero(service: WidgetService):
     assert updated.value == 0
 
 
+def test_search_matches_case_insensitive_substring(service: WidgetService):
+    service.create_widget(WidgetCreate(label="Signups today", value=42))
+    service.create_widget(WidgetCreate(label="Errors", value=0))
+    results = service.search("S TOD")
+    assert len(results) == 1
+    assert results[0].label == "Signups today"
+
+
+def test_search_no_match_returns_empty(service: WidgetService):
+    service.create_widget(WidgetCreate(label="Signups today", value=42))
+    assert service.search("nope") == []
+
+
 def test_delete_widget(service: WidgetService):
     widget = service.create_widget(WidgetCreate(label="Signups today", value=42))
     service.delete_widget(widget.id)

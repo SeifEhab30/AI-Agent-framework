@@ -21,6 +21,10 @@ class WidgetService:
     def list_widgets(self) -> list[Widget]:
         return self._repo.list_all()
 
+    def search(self, query: str) -> list[Widget]:
+        query = query.lower()
+        return [widget for widget in self._repo.list_all() if query in widget.label.lower()]
+
     def set_value(self, widget_id: str, value: int) -> Widget:
         widget = self._repo.get(widget_id)
         if widget is None:

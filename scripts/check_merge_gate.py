@@ -24,15 +24,19 @@ Checks, in order:
    check_builder_scope.py itself -- CI already re-executes all of those
    fresh, independent of anything the PR's own description claims, and
    redoing that here would just pay twice for an answer already given.
-2. The diff shape matches frontend_only, frontend_update, or
-   existing_domain (exactly one backend domain touched, no frontend
-   touched) -- regardless of branch or author. new_domain (touches both
-   backend and frontend at once -- the biggest blast radius) is still not
-   auto-mergeable, same "prove narrow, then widen" discipline as every
-   other capability this repo has added -- frontend_only was proven live
-   first (PR #82), then widened to the other two modes, then (2026-08-26)
-   to any branch/author for those same three modes.
-3. Traceability table structural check: the PR body's table lists every
+2. The diff shape matches frontend_only, frontend_update, existing_domain
+   (exactly one backend domain touched, no frontend touched), or
+   docs_only (every changed path under docs/, see is_docs_only --
+   widened 2026-08-26 after PR #115 showed a genuine doc-only maintenance
+   PR had no eligible shape at all) -- regardless of branch or author.
+   new_domain (touches both backend and frontend at once -- the biggest
+   blast radius) is still not auto-mergeable, same "prove narrow, then
+   widen" discipline as every other capability this repo has added --
+   frontend_only was proven live first (PR #82), then widened to the
+   other two modes, then (2026-08-26) to any branch/author for those
+   same three modes, and to docs_only as a fourth.
+3. Traceability table structural check (skipped entirely for docs_only --
+   no code, no tests, nothing to trace): the PR body's table lists every
    spec requirement for the target domain (not just what changed this
    run), one row per requirement plus three fixed frontend rows whenever
    the domain has a frontend, each marked Modified (a genuinely new test
@@ -175,14 +179,32 @@ def check_critical_paths(info: dict) -> list[str]:
     return []
 
 
+def is_docs_only(info: dict) -> bool:
+    """True when every changed path is under docs/ -- critical-path prompt
+    docs (docs/references/) are already rejected by check_critical_paths,
+    which always runs first, so by the time this is consulted a docs_only
+    diff can only be non-critical doc content (product specs, exec plans,
+    quality-score log, etc). No code, no tests, nothing for the
+    traceability table or semantic review to judge -- CI green + critical-
+    path-clear is the whole bar (2026-08-26, widened after PR #115 showed
+    a genuine doc-only maintenance PR had no eligible diff shape at all)."""
+    paths = [f["path"] for f in info.get("files", [])]
+    return bool(paths) and all(p.startswith("docs/") for p in paths)
+
+
 def check_diff_mode(info: dict) -> list[str]:
-    """Accepts two diff shapes, from any branch or author -- branch prefix no
-    longer gates eligibility (widened 2026-08-26): frontend_only/
+    """Accepts three diff shapes, from any branch or author -- branch prefix
+    no longer gates eligibility (widened 2026-08-26): frontend_only/
     frontend_update (no backend domain touched, a frontend component
     touched -- the two aren't distinguished here, same traceability logic
-    covers both) and existing_domain (exactly one backend domain touched, no
-    frontend touched). Rejects new_domain (touches both -- the biggest blast
-    radius, not auto-mergeable) and anything touching neither."""
+    covers both), existing_domain (exactly one backend domain touched, no
+    frontend touched), and docs_only (every changed path under docs/, see
+    is_docs_only -- widened 2026-08-26). Rejects new_domain (touches both
+    backend and frontend -- the biggest blast radius, not auto-mergeable)
+    and anything touching neither code nor docs."""
+    if is_docs_only(info):
+        return []
+
     paths = [f["path"] for f in info.get("files", [])]
     backend_domains = {
         p.split("/")[2]
@@ -200,7 +222,7 @@ def check_diff_mode(info: dict) -> list[str]:
     if not backend_domains and not touches_frontend:
         return [
             "diff touches neither src/todoapp/<domain>/ nor a frontend component "
-            "-- doesn't match any recognized eligible diff shape"
+            "nor docs-only content -- doesn't match any recognized eligible diff shape"
         ]
     if len(backend_domains) > 1:
         return [
@@ -463,6 +485,17 @@ def main() -> int:
     if args.from_json:
         data = json.loads(args.from_json.read_text(encoding="utf-8"))
         info = data["info"]
+    else:
+        if not args.pr:
+            parser.error("--pr is required unless --from-json is given")
+        info = pr_view(args.pr)
+
+    if is_docs_only(info):
+        # No code, no tests -- traceability table and semantic review don't
+        # apply. CI green + critical-path-clear (checked below) is the whole
+        # bar for this shape.
+        trace_issues, rows = [], []
+    elif args.from_json:
         trace_issues, rows = check_traceability_pure(
             data["spec_text"],
             data["frontend_exists"],
@@ -471,9 +504,6 @@ def main() -> int:
             data["existing_test_text"],
         )
     else:
-        if not args.pr:
-            parser.error("--pr is required unless --from-json is given")
-        info = pr_view(args.pr)
         trace_issues, rows = check_traceability(args.pr, info)
 
     issues: list[str] = []
@@ -496,6 +526,9 @@ def main() -> int:
         return 0
 
     if not rows:
+        if is_docs_only(info):
+            print("check_merge_gate: docs-only diff, mechanical checks clean, no code to review.")
+            return 0
         print(
             "check_merge_gate: mechanical checks clean but no 'Modified' "
             "traceability rows -- nothing new to review this run."
