@@ -19,9 +19,9 @@ on:
 
 jobs:
   review:
-    # Only Builder's own PRs are candidates -- pull_request has no head-branch
-    # filter, so this is enforced in-job instead.
-    if: startsWith(github.head_ref, 'agentic-build/')
+    # Any open PR is a candidate now (widened 2026-08-26, matching
+    # check_merge_gate.py's own eligibility -- branch/author no longer
+    # gate this, only diff shape and the traceability convention do).
     runs-on: ubuntu-latest
     permissions:
       contents: read

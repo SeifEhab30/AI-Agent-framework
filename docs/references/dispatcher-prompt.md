@@ -1,6 +1,6 @@
 # Dispatcher Routine — standing prompt
 
-Verified: 2026-08-25
+Verified: 2026-08-26
 
 This file is the **source of truth** for the Dispatcher Routine's
 instructions, same convention as `routine-prompt.md`/`builder-prompt.md`.
@@ -146,20 +146,16 @@ dispatcher doesn't need to hold any of them at all under this
 mechanism, only the ability to call `actions_run_trigger`, which it
 already has via the connector.
 
-**Wired into merge-gate (2026-08-25), not yet live end-to-end:**
-`routine-fire.yml` gained a third `target` choice, `merge_gate`, mapped
-to `trig_01EJfBr4rVxfonFknmBaCDn2`, and `scripts/check_dispatcher_scope.py`'s
-`VALID_TARGETS` was extended to match. The dispatcher's own candidate
-checks and dedup guard below (item 3) are updated for this third target.
-**Blocking gap: `MERGE_GATE_FIRE_TOKEN` does not exist yet** as a GitHub
-Actions secret -- unlike `MAINTENANCE_FIRE_TOKEN`/`BUILDER_FIRE_TOKEN`,
-no dedicated API token has been provisioned for the merge-gate trigger.
-Until a human generates one (via the trigger's own settings on claude.ai
--- no tool available to this session can mint it) and adds it as that
-secret, `routine-fire.yml` will correctly report `::error::No fire token
-configured for target 'merge_gate'` and the dispatch will fail loudly
-rather than silently -- the dispatcher's own fire call will surface this
-as a tool error per ACTIONS below, not a silent no-op.
+**Wired into merge-gate, proven live (2026-08-25):** `routine-fire.yml`
+gained a third `target` choice, `merge_gate`, mapped to
+`trig_01EJfBr4rVxfonFknmBaCDn2`, and `scripts/check_dispatcher_scope.py`'s
+`VALID_TARGETS` was extended to match. `MERGE_GATE_FIRE_TOKEN` was
+provisioned as a GitHub Actions secret and the relay proven end-to-end via
+a manual `gh workflow run routine-fire.yml -f target=merge_gate` (HTTP
+200, new session spawned). Candidate check 3 below was widened
+2026-08-26 to cover any open PR, not just Builder's -- not yet proven via
+a genuine Dispatcher-initiated fire finding a real (non-Builder)
+candidate, only the underlying relay/token.
 
 ## Prompt
 
@@ -177,15 +173,15 @@ CANDIDATE CHECKS -- run all three, independently, every time
    - 2a. Diff-based: find the merge commit that closed maintenance's last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing`). `git diff --stat` from that commit to `origin/master`, scoped to `src/todoapp/` and `docs/product-specs/`. Any file touched -> candidate. Don't assess whether a touched file's change looks meaningful -- any touch counts.
    - 2b. doc_gardener-based: run `git rev-parse --is-shallow-repository`; if it prints `true`, run `git fetch --unshallow` first -- skipping this step makes the next check silently under-report, not fail loudly. Then run `python3 scripts/doc_gardener.py`. Any staleness finding in its output -> candidate, independent of 2a's result. This exists because 2a can't see time-based staleness (a `Verified:` date going stale purely from the calendar, with zero file changes) -- doc_gardener.py is the only check that can.
    - Maintenance is a candidate if 2a OR 2b finds something. Neither finding anything -> maintenance is not a candidate.
-3. Merge-gate candidate: does an open PR exist on an `agentic-build/*` branch that merge-gate hasn't reviewed at its *current* state yet? This is deliberately "does Builder's own output still need review," not "did the dispatcher itself fire Builder this run" -- the dispatcher never waits on or monitors a fired session (see STOP CONDITIONS), so it can't know that synchronously; checking the PR's actual current state is the only thing that's both correct and checkable.
-   - List open PRs via `mcp__github__list_pull_requests` (state: open), filtered to `head.ref` starting with `agentic-build/`. Normally at most one (Builder reuses one standing branch).
+3. Merge-gate candidate: does any open PR exist that merge-gate hasn't reviewed at its *current* state yet? Widened 2026-08-26 -- no longer filtered to `agentic-build/*` branches, since merge-gate itself now reviews any PR (see merge-gate-prompt.md ELIGIBILITY v3). This is deliberately "does some PR's own current state still need review," not "did the dispatcher itself fire Builder this run" -- the dispatcher never waits on or monitors a fired session (see STOP CONDITIONS), so it can't know that synchronously; checking each open PR's actual current state is the only thing that's both correct and checkable.
+   - List every open PR via `mcp__github__list_pull_requests` (state: open) -- no `head.ref` filter. Usually small (at most one Builder PR plus however many human-authored PRs happen to be open).
    - For each such PR: read its comments and its commits via `mcp__github__pull_request_read`. If NO comment's body starts with "Merge Gate" -> never reviewed -> candidate. If one or more such comments exist, compare the most recent one's `createdAt` to the PR's most recent commit's timestamp -- if the latest commit is newer than the latest Merge Gate comment, something changed since that review -> candidate. If the latest Merge Gate comment is newer than the latest commit, it's already been reviewed at this exact state (whether it merged -- in which case the PR wouldn't be open anymore -- or was blocked and is waiting on a human) -> not a candidate, don't re-fire just to get the same answer again.
 
 DEDUP GUARD -- before firing maintenance or builder (merge-gate's own dedup is already folded into check 3 above, not a separate step)
 - Check whether that agent's standing branch (`agentic-maintenance/standing` or `agentic-build/standing`) already has an open, unmerged PR. If so, don't fire again -- that agent already has pending work sitting in front of a human, adding another run wouldn't surface anything new until that PR is resolved.
 
 ACTIONS
-- Candidate + no dedup block -> call `mcp__github__actions_run_trigger` (method `run_workflow`) as described above for that target. No message override, no targeted hint -- the fired agent runs its own full normal discovery from scratch. Confirm the call succeeded before considering it fired; a tool error means it did NOT fire -- report this, don't retry silently. (Known current gap: `merge_gate` will fail with "No fire token configured" until a human provisions `MERGE_GATE_FIRE_TOKEN` -- see Status above. That's an expected, loud failure right now, not a bug in your own logic -- report it plainly, don't work around it.)
+- Candidate + no dedup block -> call `mcp__github__actions_run_trigger` (method `run_workflow`) as described above for that target. No message override, no targeted hint -- the fired agent runs its own full normal discovery from scratch. Confirm the call succeeded before considering it fired; a tool error means it did NOT fire -- report this, don't retry silently.
 - No candidate for an agent, or dedup-blocked -> take no action for that agent. Don't notify, don't report, don't create anything.
 - All three no-candidate -> stop silently. This is the expected common case, not an error.
 

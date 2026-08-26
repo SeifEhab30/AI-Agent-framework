@@ -1,4 +1,9 @@
-"""Mechanically audits a Builder PR before the merge-gate agent may merge it.
+"""Mechanically audits any open PR before the merge-gate agent may merge it --
+not restricted to Builder's own `agentic-build/*` branches (widened
+2026-08-26; branch/author no longer gate eligibility, only diff shape and
+the traceability convention do). A PR that doesn't follow the traceability-
+table convention (see check 3) still won't pass -- that convention, not
+branch naming, is what actually distinguishes an eligible PR now.
 
 Reads everything through `gh` and `git show <ref>:<path>` against the PR's
 own head commit -- never runs `gh pr checkout` or any local clone/install.
@@ -8,18 +13,25 @@ or anywhere else. `git fetch origin pull/<n>/head` only updates FETCH_HEAD
 (a ref), not the working tree.
 
 Checks, in order:
+0. Critical-path gate: the diff touches no CI/workflow config, no gate
+   script (this one included -- a PR can't certify itself), no agent
+   prompt, and no dependency/build config. Any hit here is rejected
+   immediately, before CI/branch/traceability are even looked at -- this
+   repo's analog to an auth/security carve-out, since it has no actual
+   auth domain of its own. See CRITICAL_PATH_PREFIXES.
 1. Every CI check on the PR has concluded SUCCESS. This script does not
    re-run ruff/pytest/lint-imports/check_golden_rules.py/
    check_builder_scope.py itself -- CI already re-executes all of those
    fresh, independent of anything the PR's own description claims, and
    redoing that here would just pay twice for an answer already given.
-2. The PR's branch is agentic-build/* and its diff shape matches
-   frontend_only, frontend_update, or existing_domain (exactly one backend
-   domain touched, no frontend touched). new_domain (touches both backend
-   and frontend at once -- the biggest blast radius) is still not
+2. The diff shape matches frontend_only, frontend_update, or
+   existing_domain (exactly one backend domain touched, no frontend
+   touched) -- regardless of branch or author. new_domain (touches both
+   backend and frontend at once -- the biggest blast radius) is still not
    auto-mergeable, same "prove narrow, then widen" discipline as every
    other capability this repo has added -- frontend_only was proven live
-   first (PR #82), then widened to the other two.
+   first (PR #82), then widened to the other two modes, then (2026-08-26)
+   to any branch/author for those same three modes.
 3. Traceability table structural check: the PR body's table lists every
    spec requirement for the target domain (not just what changed this
    run), one row per requirement plus three fixed frontend rows whenever
@@ -62,8 +74,36 @@ import subprocess
 import sys
 from pathlib import Path
 
-ELIGIBLE_BRANCH_PREFIX = "agentic-build/"
 FRONTEND_ROW_COUNT = 3  # initial render, create-success, create-validation-error
+
+# Path-based "critical" gate: this repo has no auth/security domain of its
+# own, so the closest analog is the machinery that decides what code is
+# trustworthy in the first place -- CI/workflow config (secrets live here),
+# the mechanical gate scripts (this file included -- a PR can't certify
+# itself), the agent prompts (define what an agent is even allowed to do),
+# and dependency/build config (supply-chain surface). A PR touching any of
+# these is never auto-mergeable, regardless of branch prefix or diff shape
+# -- always left for a human, no exception. Prefix-matched against every
+# changed path.
+CRITICAL_PATH_PREFIXES = (
+    ".github/workflows/",
+    "scripts/check_merge_gate.py",
+    "scripts/check_builder_scope.py",
+    "scripts/check_dispatcher_scope.py",
+    "scripts/check_golden_rules.py",
+    "scripts/doc_gardener.py",
+    "scripts/run-agent.sh",
+    "docs/references/",
+    "pyproject.toml",
+    "requirements.in",
+    "requirements.txt",
+    ".pre-commit-config.yaml",
+    ".env.example",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "frontend/vite.config.js",
+    ".claude/",
+)
 TABLE_ROW_PATTERN = re.compile(
     r"^\|\s*(.+?)\s*\|\s*(Modified|Not modified)\s*\|\s*(.+?)\s*\|\s*$",
     re.MULTILINE | re.IGNORECASE,
@@ -109,17 +149,32 @@ def check_ci_green(info: dict) -> list[str]:
     return issues
 
 
-def check_branch_and_mode(info: dict) -> list[str]:
-    """Accepts two diff shapes: frontend_only/frontend_update (no backend
-    domain touched, a frontend component touched -- the two aren't
-    distinguished here, same traceability logic covers both) and
-    existing_domain (exactly one backend domain touched, no frontend
-    touched). Rejects new_domain (touches both -- the biggest blast radius,
-    not auto-mergeable) and anything touching neither."""
-    branch = info.get("headRefName", "")
-    if not branch.startswith(ELIGIBLE_BRANCH_PREFIX):
-        return [f"branch '{branch}' is not under {ELIGIBLE_BRANCH_PREFIX} -- not a Builder PR"]
+def check_critical_paths(info: dict) -> list[str]:
+    """Never auto-mergeable, no matter what else about the PR is clean --
+    checked first, ahead of even CI/branch/traceability, so a critical-path
+    PR is rejected for the right reason even if it happens to also fail
+    something else."""
+    paths = [f["path"] for f in info.get("files", [])]
+    hits = sorted(
+        p for p in paths if any(p.startswith(prefix) for prefix in CRITICAL_PATH_PREFIXES)
+    )
+    if hits:
+        return [
+            f"touches critical path(s) {hits} -- CI/workflow config, gate scripts, "
+            f"agent prompts, and dependency/build config are never auto-merged, "
+            f"always left for human review"
+        ]
+    return []
 
+
+def check_diff_mode(info: dict) -> list[str]:
+    """Accepts two diff shapes, from any branch or author -- branch prefix no
+    longer gates eligibility (widened 2026-08-26): frontend_only/
+    frontend_update (no backend domain touched, a frontend component
+    touched -- the two aren't distinguished here, same traceability logic
+    covers both) and existing_domain (exactly one backend domain touched, no
+    frontend touched). Rejects new_domain (touches both -- the biggest blast
+    radius, not auto-mergeable) and anything touching neither."""
     paths = [f["path"] for f in info.get("files", [])]
     backend_domains = {
         p.split("/")[2]
@@ -137,7 +192,7 @@ def check_branch_and_mode(info: dict) -> list[str]:
     if not backend_domains and not touches_frontend:
         return [
             "diff touches neither src/todoapp/<domain>/ nor a frontend component "
-            "-- doesn't look like a recognized Builder build shape"
+            "-- doesn't match any recognized eligible diff shape"
         ]
     if len(backend_domains) > 1:
         return [
@@ -396,8 +451,9 @@ def main() -> int:
         trace_issues, rows = check_traceability(args.pr, info)
 
     issues: list[str] = []
+    issues.extend(check_critical_paths(info))
     issues.extend(check_ci_green(info))
-    issues.extend(check_branch_and_mode(info))
+    issues.extend(check_diff_mode(info))
     issues.extend(trace_issues)
 
     if issues:
