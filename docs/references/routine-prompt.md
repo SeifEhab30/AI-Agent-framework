@@ -99,6 +99,22 @@ passed in from the Dispatcher, which would have needed `routine-fire.yml`
 to carry a custom message payload -- a bigger change than this one. Not
 yet proven live with the new scoping active.
 
+**Full-sweep fallback + fail-loud lookup added** (2026-08-26, same day,
+after external review): the scoping above has a real trade-off the old
+design structurally couldn't have -- it trusts every past review was
+correct forever, so one incorrect "clean" judgment on a domain now
+persists silently until something else touches that domain again. Fixed
+with a weekly full-sweep fallback (7+ calendar days since the last full
+sweep -> review all seven domains regardless of diff, ignoring the
+scoped path entirely that run) rather than new per-domain tracked state,
+which would itself need to stay trustworthy -- the same failure class
+this guards against. The fallback needs no new state of its own: it
+reuses the last-merged-PR's date already fetched for the scoped-diff
+lookup. Also: the merge-commit lookup or diff command failing outright
+must now be reported, never silently treated as "zero domains touched"
+-- same failure shape as the shallow-clone bug above, now guarded
+against here too. Neither proven live yet.
+
 ---
 
 ## Prompt
@@ -115,11 +131,13 @@ Do ALL of the following:
 
 1. Run `doc_gardener.py` and `check_golden_rules.py`. Fix each finding, strictly scoped to the exact file(s) it flagged.
 
-2. Code-health review, scoped to what actually changed since your last run (added 2026-08-26 -- reviewing all seven domains from scratch every run was the single biggest time cost in a full run, most of it spent re-confirming domains nothing had touched):
-   - Find the merge commit of your own last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing` -- same lookup `dispatcher-prompt.md` candidate check 2a already does). No prior merged PR exists yet (shouldn't happen in this repo, but just in case) -> fall back to reviewing every domain once, same as the old unscoped behavior.
-   - `git diff --stat <that commit> origin/master -- src/todoapp/ docs/product-specs/` -- the domains this touches (by directory name under `src/todoapp/`, or by product-spec filename) are the only ones step 2 reviews this run. This mirrors the Dispatcher's own check 2a exactly, so it's safe: a spec-only edit still shows up (scoped path includes `docs/product-specs/`), a code-only edit still shows up, and a domain nothing touched genuinely has nothing new for this step to find -- it was already reviewed clean as of your last run, and nothing changed since.
-   - Diff touches zero domains -> step 2 has nothing to do this run (expected when you were fired purely for a step-1 finding, e.g. `doc_gardener.py` staleness with no code/spec drift) -- skip straight to step 3.
-   - For each domain the diff *does* touch, compare docs/product-specs/<domain>.md against src/todoapp/<domain>/service.py same as before. On a real discrepancy, decide which side is wrong:
+2. Code-health review, scoped to what changed since your last run -- with a periodic full-sweep fallback so a domain that was ever incorrectly judged clean doesn't stay unreviewed forever (both added 2026-08-26). The old design reviewed all seven domains from scratch every run, so a wrong judgment couldn't compound; the scoped version trusts every past review was correct, which means a mistaken "clean" verdict now persists silently unless something else touches that domain again. The fix is a periodic full sweep, not new tracking state -- it reuses the merge date you're already fetching for the lookup below, rather than adding a new piece of state that would itself need to stay trustworthy, which is exactly the failure class this guards against.
+   - Find the merge commit of your own last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing` -- same lookup `dispatcher-prompt.md` candidate check 2a already does) AND its merge date. No prior merged PR exists yet -> full sweep is due (nothing to compare against).
+   - If the merge-commit lookup or the `git diff --stat` command itself fails or errors -- not "ran clean and found nothing," but the command didn't complete -- stop and report this in the run output rather than treating it as zero domains touched. A failed lookup silently resolving to "nothing to review" is the same failure shape as the shallow-clone bug already hit once (a skipped check indistinguishable from a clean one) -- never let that happen again.
+   - That merge date is 7 or more calendar days before today -> full sweep is due: review all seven domains regardless of diff, same as the pre-2026-08-26 behavior, and skip the scoped diff below entirely this run.
+   - Neither condition -> proceed with the scoped diff: `git diff --stat <that commit> origin/master -- src/todoapp/ docs/product-specs/` -- the domains this touches (by directory name under `src/todoapp/`, or by product-spec filename) are the only ones step 2 reviews this run. This mirrors the Dispatcher's own check 2a exactly, so it's safe: a spec-only edit still shows up (scoped path includes `docs/product-specs/`), a code-only edit still shows up, and a domain nothing touched genuinely has nothing new for this step to find -- it was already reviewed clean as of your last run, and nothing changed since.
+   - Diff touches zero domains (scoped mode only) -> step 2 has nothing to do this run (expected when you were fired purely for a step-1 finding, e.g. `doc_gardener.py` staleness with no code/spec drift) -- skip straight to step 3.
+   - For each domain in scope this run (all seven on a full sweep, or just the diff-touched ones on a scoped run), compare docs/product-specs/<domain>.md against src/todoapp/<domain>/service.py. On a real discrepancy, decide which side is wrong:
    - **Bullet tagged `[ready]`, or spec carries `Status: Ready for implementation`?** That's the Builder Routine's territory, not yours -- skip it entirely, even if the gap would otherwise fit your service.py+test_service.py scope. Don't report it either; it's not a maintenance finding, it's a Builder discovery target.
    - **Spec right, code wrong:** if fixable entirely within that domain's service.py + test_service.py (see SCOPE GUARD), write a failing test in tests/<domain>/test_service.py, then fix service.py so it passes. If it needs any other file, touch neither -- describe the discrepancy and the files it would require in the PR instead.
    - **Code right, spec stale:** correct the prose in that domain's product-spec doc and bump its `Verified:` date. One file, one domain. Not confident which side is wrong? Touch neither -- describe it and let a human decide.
