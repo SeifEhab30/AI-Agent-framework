@@ -83,6 +83,22 @@ Added an explicit unshallow step up front so `doc_gardener.py`'s
 `Verified:`-date checks reliably actually run instead of silently
 no-opping on whatever clone depth the sandbox happens to provide.
 
+**Step 2 scoped to changed domains only** (2026-08-26): previously
+compared every one of the seven domains' spec against its service.py,
+every run, regardless of whether anything had changed since the last
+run -- the single biggest time cost in a live run (the 2026-08-26 test,
+PR #98, took ~7.7 minutes from fire to PR, almost all of it this step).
+Now diffs against its own last merged PR first (same lookup
+`dispatcher-prompt.md` candidate check 2a already does) and only reviews
+domains that diff actually touches -- a spec-only or code-only edit
+still shows up, a domain nothing touched is skipped, since it was
+already reviewed clean as of the last run. This is the "targeted
+hand-off" idea from `dispatcher-prompt.md`'s deferred list, but done
+inside Maintenance's own prompt (it computes its own scope) rather than
+passed in from the Dispatcher, which would have needed `routine-fire.yml`
+to carry a custom message payload -- a bigger change than this one. Not
+yet proven live with the new scoping active.
+
 ---
 
 ## Prompt
@@ -99,7 +115,11 @@ Do ALL of the following:
 
 1. Run `doc_gardener.py` and `check_golden_rules.py`. Fix each finding, strictly scoped to the exact file(s) it flagged.
 
-2. Code-health review: for each domain under src/todoapp/ (currently todos, notes, bookmarks, widgets, reminders, labels, tags), compare docs/product-specs/<domain>.md against src/todoapp/<domain>/service.py. On a real discrepancy, decide which side is wrong:
+2. Code-health review, scoped to what actually changed since your last run (added 2026-08-26 -- reviewing all seven domains from scratch every run was the single biggest time cost in a full run, most of it spent re-confirming domains nothing had touched):
+   - Find the merge commit of your own last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing` -- same lookup `dispatcher-prompt.md` candidate check 2a already does). No prior merged PR exists yet (shouldn't happen in this repo, but just in case) -> fall back to reviewing every domain once, same as the old unscoped behavior.
+   - `git diff --stat <that commit> origin/master -- src/todoapp/ docs/product-specs/` -- the domains this touches (by directory name under `src/todoapp/`, or by product-spec filename) are the only ones step 2 reviews this run. This mirrors the Dispatcher's own check 2a exactly, so it's safe: a spec-only edit still shows up (scoped path includes `docs/product-specs/`), a code-only edit still shows up, and a domain nothing touched genuinely has nothing new for this step to find -- it was already reviewed clean as of your last run, and nothing changed since.
+   - Diff touches zero domains -> step 2 has nothing to do this run (expected when you were fired purely for a step-1 finding, e.g. `doc_gardener.py` staleness with no code/spec drift) -- skip straight to step 3.
+   - For each domain the diff *does* touch, compare docs/product-specs/<domain>.md against src/todoapp/<domain>/service.py same as before. On a real discrepancy, decide which side is wrong:
    - **Bullet tagged `[ready]`, or spec carries `Status: Ready for implementation`?** That's the Builder Routine's territory, not yours -- skip it entirely, even if the gap would otherwise fit your service.py+test_service.py scope. Don't report it either; it's not a maintenance finding, it's a Builder discovery target.
    - **Spec right, code wrong:** if fixable entirely within that domain's service.py + test_service.py (see SCOPE GUARD), write a failing test in tests/<domain>/test_service.py, then fix service.py so it passes. If it needs any other file, touch neither -- describe the discrepancy and the files it would require in the PR instead.
    - **Code right, spec stale:** correct the prose in that domain's product-spec doc and bump its `Verified:` date. One file, one domain. Not confident which side is wrong? Touch neither -- describe it and let a human decide.
