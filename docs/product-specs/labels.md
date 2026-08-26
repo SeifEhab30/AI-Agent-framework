@@ -13,6 +13,7 @@ themselves).
 - List all labels.
 - Delete a label by id.
 - Search labels by a case-insensitive substring match on name.
+- Rename a label's name (reject a blank new name).
 
 ## Non-goals
 No auth, no multi-user separation, no attaching labels to other domains'

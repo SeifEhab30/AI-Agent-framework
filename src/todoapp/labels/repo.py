@@ -39,6 +39,10 @@ class LabelRepo:
         self._conn.execute("DELETE FROM labels WHERE id = ?", (label_id,))
         self._conn.commit()
 
+    def set_name(self, label_id: str, name: str) -> None:
+        self._conn.execute("UPDATE labels SET name = ? WHERE id = ?", (name, label_id))
+        self._conn.commit()
+
     @staticmethod
     def _to_label(row: tuple) -> Label:
         id_, name, color = row
