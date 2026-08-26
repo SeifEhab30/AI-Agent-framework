@@ -1,6 +1,6 @@
 # Agentic Routine — standing prompt
 
-Verified: 2026-08-24
+Verified: 2026-08-26
 
 This file is the **source of truth** for the scheduled maintenance
 Routine's instructions. The Routine itself is configured outside this
@@ -34,8 +34,13 @@ python`, `find -iname venv`, then building one from scratch). The prompt
 below now states the venv bootstrap up front instead of leaving the
 agent to rediscover it. Otherwise this trim only tightens wording —
 every decision rule, file boundary, and limit is unchanged from the
-version PR #25 ran against. Next scheduled fire: 2026-08-24 (Tuesday
-05:00 UTC).
+version PR #25 ran against.
+
+**Cron retimed** (2026-08-24): schedule moved to `30 5 * * 2` (Tuesdays
+05:30 UTC). Also fired ad hoc, between scheduled runs, by the Dispatcher
+Routine whenever it finds doc/golden-rule staleness or drift between
+`src/todoapp/` and `docs/product-specs/` (see `dispatcher-prompt.md`
+candidate check 2).
 
 **Fixed branch, reused across runs** (2026-08-18): replaces the old
 `agentic-maintenance/<timestamp>` fresh-branch-per-run naming with a
