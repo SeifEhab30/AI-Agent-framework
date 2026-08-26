@@ -1,6 +1,6 @@
 # Builder Routine — standing prompt
 
-Verified: 2026-08-24
+Verified: 2026-08-26
 
 This file is the **source of truth** for the Builder Routine's
 instructions — a second, separate scheduled agent from the maintenance
