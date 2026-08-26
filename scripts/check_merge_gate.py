@@ -40,7 +40,10 @@ Checks, in order:
    still covering it). Row count must match the domain's actual
    requirement count; each Modified row's test must be newly added in the
    diff; each Not modified row's test must actually exist in the repo at
-   this PR's head commit. A lower bound only, same caveat
+   this PR's head commit AND must not itself be touched by this diff
+   (2026-08-26 -- a test edited in this run but still claimed unchanged
+   would otherwise pass CI-green and this structural check both, even
+   though its behavior may have shifted). A lower bound only, same caveat
    check_builder_scope.py's own check_traceability documents -- proves
    the row isn't fabricated, not that the test actually covers what the
    requirement claims.
@@ -363,6 +366,23 @@ def check_traceability_pure(
                 issues.append(
                     f"traceability table marks '{requirement}' "
                     f"{'Modified' if modified else 'Not modified'}, naming '{name}', but {where}"
+                )
+                continue
+            if not modified and re.search(rf"\b{re.escape(name)}\b", added_lines):
+                # "Not modified" means unchanged, per builder-prompt.md's own
+                # definition -- a test whose body was touched in this diff but
+                # still claimed unchanged is a mislabeled row: its behavior may
+                # have shifted while CI-green (proving only that the *edited*
+                # version still passes) makes that look identical to a
+                # genuinely untouched test. Word-boundary match, not bare
+                # substring (unlike the Modified check above) -- this one
+                # blocks a merge on a hit, so a false positive from e.g. a
+                # newly-added `test_create_extra` containing `test_create` as
+                # a substring is worth the extra precision.
+                issues.append(
+                    f"traceability table marks '{requirement}' Not modified, naming '{name}', "
+                    f"but this diff touches that test -- mark it Modified instead, or don't "
+                    f"touch the test if the row is genuinely meant to be unchanged"
                 )
                 continue
             if modified:
