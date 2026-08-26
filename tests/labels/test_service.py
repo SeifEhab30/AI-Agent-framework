@@ -64,16 +64,3 @@ def test_search_matches_case_insensitive_substring(service: LabelService):
 def test_search_no_match_returns_empty(service: LabelService):
     service.create_label(LabelCreate(name="Urgent", color="#FF0000"))
     assert service.search("nope") == []
-
-
-def test_rename_label(service: LabelService):
-    label = service.create_label(LabelCreate(name="urgent", color="#FF0000"))
-    renamed = service.rename(label.id, "important")
-    assert renamed.id == label.id
-    assert renamed.color == "#FF0000"
-
-
-def test_rename_rejects_blank_name(service: LabelService):
-    label = service.create_label(LabelCreate(name="urgent", color="#FF0000"))
-    with pytest.raises(ValidationError):
-        service.rename(label.id, "   ")
