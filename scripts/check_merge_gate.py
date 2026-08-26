@@ -104,6 +104,11 @@ CRITICAL_PATH_PREFIXES = (
     "frontend/vite.config.js",
     ".claude/",
 )
+# This pattern's format contract is defined in prose in builder-prompt.md's
+# "Test column format" paragraph -- that's the source of truth for what a
+# valid row looks like (bare test name, comma-separated for multiple tests,
+# no filename prefix). If that paragraph ever changes, this pattern must
+# change with it, and vice versa -- nothing else keeps the two in sync.
 TABLE_ROW_PATTERN = re.compile(
     r"^\|\s*(.+?)\s*\|\s*(Modified|Not modified)\s*\|\s*(.+?)\s*\|\s*$",
     re.MULTILINE | re.IGNORECASE,
