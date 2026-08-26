@@ -1,6 +1,6 @@
 # Todos — Product Spec
 
-Verified: 2026-08-25
+Verified: 2026-08-26
 
 ## What it does
 A minimal todo list. A todo has a title and a done flag.
@@ -10,7 +10,7 @@ A minimal todo list. A todo has a title and a done flag.
 - List all todos.
 - Toggle a todo's done state.
 - Delete a todo by id.
-- [ready] Search todos by a case-insensitive substring match on title.
+- Search todos by a case-insensitive substring match on title.
 
 ## Non-goals
 No auth, no multi-user separation, no due dates, no persistence beyond local
