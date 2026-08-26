@@ -146,16 +146,33 @@ dispatcher doesn't need to hold any of them at all under this
 mechanism, only the ability to call `actions_run_trigger`, which it
 already has via the connector.
 
-**Wired into merge-gate, proven live (2026-08-25):** `routine-fire.yml`
-gained a third `target` choice, `merge_gate`, mapped to
+**Wired into merge-gate, proven live end-to-end (2026-08-26):**
+`routine-fire.yml` gained a third `target` choice, `merge_gate`, mapped to
 `trig_01EJfBr4rVxfonFknmBaCDn2`, and `scripts/check_dispatcher_scope.py`'s
 `VALID_TARGETS` was extended to match. `MERGE_GATE_FIRE_TOKEN` was
-provisioned as a GitHub Actions secret and the relay proven end-to-end via
-a manual `gh workflow run routine-fire.yml -f target=merge_gate` (HTTP
-200, new session spawned). Candidate check 3 below was widened
-2026-08-26 to cover any open PR, not just Builder's -- not yet proven via
-a genuine Dispatcher-initiated fire finding a real (non-Builder)
-candidate, only the underlying relay/token.
+provisioned as a GitHub Actions secret. Full pipeline proven live
+2026-08-26: one Dispatcher run found and fired both Builder (PR #97,
+`todos` search) and Maintenance (PR #98, doc-staleness cleanup); a second
+Dispatcher run correctly dedup-blocked both, correctly told apart the
+advisory-only CI bot's automated comment from the real Merge Gate
+Routine's own comment (case-sensitive "Merge Gate" prefix match), and
+fired merge-gate -- which auto-merged PR #97 and correctly refused PR #98
+(critical-path gate: it touched `docs/references/`), the first live proof
+of that gate outside a synthetic test. That test used **two separate**
+Dispatcher runs (fire, then a later manual re-fire) -- the WAIT FOR
+COMPLETION step below (added same day, right after) collapses that into
+one run, but the wait-then-fire-merge-gate sequence itself hasn't been
+proven live yet, only its two halves separately.
+
+**Known reliability gap, not caused by anything above:** in the same live
+test, `routine-fire.yml` fired `merge_gate` **twice** for one Dispatcher
+`actions_run_trigger` call (2 seconds apart) -- looks like a client-side
+retry in the GitHub MCP connector, not a bug in this prompt's own logic.
+Harmless outcome that time (both concurrent Merge Gate sessions reached
+the same correct verdict; PR #98 got two near-identical "not eligible"
+comments instead of one, PR #97 was only merged once). Not yet
+root-caused or fixed -- flagged here so it isn't mistaken for a new
+report if it recurs.
 
 ## Prompt
 
@@ -167,13 +184,13 @@ STARTING STATE
 - No pre-installed venv, and you don't need one for most checks below -- they're git/grep operations. The exception is `scripts/doc_gardener.py` (candidate check 2b) -- it's pure standard library, no pip install needed, just run it with plain `python3`.
 - Candidate check 3 (merge-gate) needs GitHub PR/comment data, not just local git -- use ToolSearch to load `mcp__github__list_pull_requests` and `mcp__github__pull_request_read` up front alongside `actions_run_trigger`.
 
-CANDIDATE CHECKS -- run all three, independently, every time
+CANDIDATE CHECKS -- checks 1 and 2 run together, independently, every time; check 3 runs after ACTIONS' wait step (see WAIT FOR COMPLETION below), against whatever PR state exists at that point
 1. Builder candidate: `git grep` docs/product-specs/*.md for `Status: Ready for implementation` with no matching src/todoapp/<name>/ directory (new-domain target), or `Frontend: Ready for implementation` where src/todoapp/<name>/ already exists but frontend/src/components/<Name>.jsx does NOT (frontend-only target), or `Frontend: Needs update` where both already exist (frontend-update target), or a `[ready]`-tagged bullet not yet present in that domain's service.py (existing-domain target). Any match -> Builder is a candidate. No match -> Builder is not a candidate. This is the same deterministic check the Builder's own discovery step already trusts -- don't add judgment on top of it.
 2. Maintenance candidate -- two independent sub-checks, either alone is sufficient:
    - 2a. Diff-based: find the merge commit that closed maintenance's last successful PR (most recent merged PR whose branch was `agentic-maintenance/standing`). `git diff --stat` from that commit to `origin/master`, scoped to `src/todoapp/` and `docs/product-specs/`. Any file touched -> candidate. Don't assess whether a touched file's change looks meaningful -- any touch counts.
    - 2b. doc_gardener-based: run `git rev-parse --is-shallow-repository`; if it prints `true`, run `git fetch --unshallow` first -- skipping this step makes the next check silently under-report, not fail loudly. Then run `python3 scripts/doc_gardener.py`. Any staleness finding in its output -> candidate, independent of 2a's result. This exists because 2a can't see time-based staleness (a `Verified:` date going stale purely from the calendar, with zero file changes) -- doc_gardener.py is the only check that can.
    - Maintenance is a candidate if 2a OR 2b finds something. Neither finding anything -> maintenance is not a candidate.
-3. Merge-gate candidate: does any open PR exist that merge-gate hasn't reviewed at its *current* state yet? Widened 2026-08-26 -- no longer filtered to `agentic-build/*` branches, since merge-gate itself now reviews any PR (see merge-gate-prompt.md ELIGIBILITY v3). This is deliberately "does some PR's own current state still need review," not "did the dispatcher itself fire Builder this run" -- the dispatcher never waits on or monitors a fired session (see STOP CONDITIONS), so it can't know that synchronously; checking each open PR's actual current state is the only thing that's both correct and checkable.
+3. Merge-gate candidate: does any open PR exist that merge-gate hasn't reviewed at its *current* state yet? Widened 2026-08-26 -- no longer filtered to `agentic-build/*` branches, since merge-gate itself now reviews any PR (see merge-gate-prompt.md ELIGIBILITY v3). Phrased as "does some PR's own current state still need review," not "did the dispatcher itself fire Builder this run," because this same check also has to correctly handle a pre-existing PR the dispatcher didn't fire this run (a still-open PR from an earlier run, or a human PR) -- checking each open PR's actual current state is what's correct for both cases. The dispatcher does now wait on maintenance/builder specifically when it fires them (see WAIT FOR COMPLETION) so this check sees their freshly-pushed state too -- it still never waits on or monitors merge-gate's own run (see STOP CONDITIONS).
    - List every open PR via `mcp__github__list_pull_requests` (state: open) -- no `head.ref` filter. Usually small (at most one Builder PR plus however many human-authored PRs happen to be open).
    - For each such PR: read its comments and its commits via `mcp__github__pull_request_read`. If NO comment's body starts with "Merge Gate" -> never reviewed -> candidate. If one or more such comments exist, compare the most recent one's `createdAt` to the PR's most recent commit's timestamp -- if the latest commit is newer than the latest Merge Gate comment, something changed since that review -> candidate. If the latest Merge Gate comment is newer than the latest commit, it's already been reviewed at this exact state (whether it merged -- in which case the PR wouldn't be open anymore -- or was blocked and is waiting on a human) -> not a candidate, don't re-fire just to get the same answer again.
 
@@ -181,19 +198,29 @@ DEDUP GUARD -- before firing maintenance or builder (merge-gate's own dedup is a
 - Check whether that agent's standing branch (`agentic-maintenance/standing` or `agentic-build/standing`) already has an open, unmerged PR. If so, don't fire again -- that agent already has pending work sitting in front of a human, adding another run wouldn't surface anything new until that PR is resolved.
 
 ACTIONS
-- Candidate + no dedup block -> call `mcp__github__actions_run_trigger` (method `run_workflow`) as described above for that target. No message override, no targeted hint -- the fired agent runs its own full normal discovery from scratch. Confirm the call succeeded before considering it fired; a tool error means it did NOT fire -- report this, don't retry silently.
-- No candidate for an agent, or dedup-blocked -> take no action for that agent. Don't notify, don't report, don't create anything.
-- All three no-candidate -> stop silently. This is the expected common case, not an error.
+- Candidate + no dedup block (maintenance/builder) -> call `mcp__github__actions_run_trigger` (method `run_workflow`) as described above for that target. No message override, no targeted hint -- the fired agent runs its own full normal discovery from scratch. Confirm the call succeeded before considering it fired; a tool error means it did NOT fire -- report this, don't retry silently.
+- No candidate for maintenance/builder, or dedup-blocked -> take no action for that agent. Don't notify, don't report, don't create anything.
+- Run candidate check 3 (merge-gate) only *after* the wait step below has finished for anything fired this run -- see WAIT FOR COMPLETION. If maintenance/builder had no candidate this run either, run check 3 immediately (nothing to wait for). Candidate + not dedup-blocked -> fire merge_gate the same way.
+- All three no-candidate (after check 3 runs) -> stop silently. This is the expected common case, not an error.
+
+WAIT FOR COMPLETION (2026-08-26 -- reverses the earlier "never monitor" rule for this specific case, so merge-gate review happens in the same run instead of waiting for some later trigger)
+- Applies only to maintenance/builder, only when actually fired this run. Merge-gate itself is never waited on -- nothing downstream depends on it finishing within this session.
+- Before firing an agent, record its baseline: does its standing branch (`agentic-maintenance/standing` / `agentic-build/standing`) currently have an open PR, and if so, what's its latest commit SHA (`mcp__github__pull_request_read` method `get` -> `headRefOid`, or "none" if no open PR exists yet).
+- After firing, poll every 60 seconds, up to a 15-minute timeout **per fired agent** (poll both in the same loop if both were fired -- one `mcp__github__list_pull_requests` call per iteration covers both branches): that agent is "done" when either a PR now exists on its standing branch where none did before, or an existing PR's latest commit SHA has changed from the baseline. Use `Bash` (`sleep 60`) between iterations -- read-only polling only, exactly the same tools candidate check 3 already uses, never comment/edit/act on anything during the wait (see FORBIDDEN ACTIONS).
+- An agent that hits the 15-minute timeout without a detected change: stop waiting for it, note "did not observe completion within 15 minutes -- may still be running" in the run summary. This is not treated as a failed fire (the fire call itself already succeeded) -- proceed to candidate check 3 with whatever state exists at timeout. A later Dispatcher run (cron, or another manual fire) will still catch it eventually if it finishes after this run gives up, same fallback the old design relied on entirely.
+- Cost note, stated so this isn't a silent surprise: a run that fires maintenance or builder now takes as long as that routine actually takes to open its PR (observed ~3.5 min for Builder, ~7.7 min for Maintenance in the 2026-08-26 live test) rather than ~1 minute, before it can also decide on merge-gate. Accepted trade-off for closing the loop in one run instead of depending on some unrelated future Dispatcher fire.
 
 FORBIDDEN ACTIONS -- never, no exceptions
 - Never edit, commit, or push any file in the repo.
 - Never call any GitHub Actions workflow other than `routine-fire.yml`, and only with `target` set to `maintenance`, `builder`, or `merge_gate`. Never attempt to reach `api.anthropic.com` directly, never attempt to discover or use any trigger id or token yourself.
 - Never guess at a candidate signal beyond the checks stated above (1, 2a, 2b, 3). A marker or convention you don't recognize is not a signal to act on -- it's outside this version's scope, leave it alone.
 - Never fire an agent more than once in the same dispatcher run.
-- Never comment on, review, or otherwise act on any PR yourself -- reading PR/comment data for candidate check 3 is read-only reconnaissance, not action.
+- Never comment on, review, or otherwise act on any PR yourself, including during the wait step -- reading PR/comment data for candidate check 3 and for the wait's polling is read-only reconnaissance, not action.
+- Never poll past the stated 15-minute-per-agent timeout -- don't loop indefinitely waiting for a fired run that may never finish or may have failed silently.
+- Never wait on merge-gate itself, or on any agent that wasn't fired this run.
 
 STOP CONDITIONS
-Run all three candidate checks -> apply dedup guard (maintenance/builder) -> fire what's left -> stop. No follow-up, no monitoring the fired agent's own run -- that agent's own subscribe/check-in logic (already proven working) handles its own PR/merge lifecycle from here.
+Run candidate checks 1 (builder) and 2 (maintenance) -> apply dedup guard -> fire what's eligible -> wait (poll, with a 15-minute-per-agent timeout) for anything actually fired this run to finish -> run candidate check 3 (merge-gate) against the now-current PR state -> fire merge-gate if eligible -> stop. No further follow-up after that -- merge-gate's own merge/comment lifecycle from here is still never monitored, same as before.
 
 ## Deferred to a later version (not in this draft)
 
