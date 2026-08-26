@@ -21,6 +21,10 @@ class TodoService:
     def list_todos(self) -> list[Todo]:
         return self._repo.list_all()
 
+    def search(self, query: str) -> list[Todo]:
+        query = query.lower()
+        return [t for t in self._repo.list_all() if query in t.title.lower()]
+
     def toggle_done(self, todo_id: str) -> Todo:
         todo = self._repo.get(todo_id)
         if todo is None:

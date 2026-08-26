@@ -24,6 +24,10 @@ def build_router(service: TodoService, emit_event: Callable[..., None]) -> APIRo
         emit_event("todo_created", todo_id=todo.id)
         return todo
 
+    @router.get("/search", response_model=list[Todo])
+    def search_todos(q: str) -> list[Todo]:
+        return service.search(q)
+
     @router.post("/{todo_id}/toggle", response_model=Todo)
     def toggle_todo(todo_id: str) -> Todo:
         try:
