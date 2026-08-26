@@ -10,6 +10,7 @@ A minimal todo list. A todo has a title and a done flag.
 - List all todos.
 - Toggle a todo's done state.
 - Delete a todo by id.
+- [ready] Search todos by a case-insensitive substring match on title.
 
 ## Non-goals
 No auth, no multi-user separation, no due dates, no persistence beyond local
