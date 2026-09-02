@@ -1,7 +1,6 @@
 # AI Agent — Todoapp
 
-> **Status: Work in progress, handed off.** The original author's internship
-> ended and this project is now looking for its next maintainer. The app and
+> **Status: Work in progress, handed off.** The app and
 > the four agent Routines described below are functional and were proven
 > live (see `docs/exec-plans/active/milestones.md` for the run history), but
 > the framework itself — the pattern of autonomous agents maintaining and
@@ -9,7 +8,10 @@
 > experiment, not a finished product. **Start with [TO_CONTINUE.md](TO_CONTINUE.md)**
 > for the full picture (what's built, what's proven, what's still open) and
 > [memory.md](memory.md) for ready-to-paste prompts if you're picking this
-> up with Claude Code, Codex, or Cursor.
+> up with Claude Code, Codex, or Cursor. **Fork this repo before working
+> on it** — you won't have push access to the original, and a fork is
+> what lets you set your own GitHub Actions secrets, branch protection,
+> and RemoteTriggers without touching anyone else's.
 
 A small FastAPI + SQLite demo app used as a reference implementation for an
 agent-driven engineering workflow: enforced layered architecture, structured
@@ -34,10 +36,15 @@ This section is for someone picking up the project cold. It covers getting
 the app running locally, then (optionally, once you're comfortable with the
 codebase) standing up the four agent Routines against your own fork.
 
-### 1. Clone and install
+### 1. Fork, clone, and install
+
+**Fork this repo first** (GitHub's "Fork" button, or `gh repo fork`) —
+don't clone the original directly. You won't have write access to it,
+and everything past step 5 below (secrets, branch protection,
+RemoteTriggers) needs a repo you actually control.
 
 ```bash
-git clone <this-repo-url>
+git clone <your-fork-url>
 cd <repo-directory>
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
