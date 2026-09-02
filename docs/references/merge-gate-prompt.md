@@ -65,22 +65,34 @@ PR's branch. Nothing is written to disk, so there is nothing to clean up.
 
 **Live trigger exists** (`trig_01EJfBr4rVxfonFknmBaCDn2`, manual-only, no
 cron — same prove-by-hand-first discipline the other three earned before
-any of them got a schedule). Created 2026-08-25, not yet run. This agent's
-one action is merging to `master`, a bigger blast radius than anything
-Maintenance or Builder do (their mistakes sit in an unmerged PR; this
-agent's mistake is already on `master`) — first run should be watched,
-not fired and forgotten.
+any of them got a schedule). Created 2026-08-25. This agent's one action
+is merging to `master`, a bigger blast radius than anything Maintenance
+or Builder do (their mistakes sit in an unmerged PR; this agent's
+mistake is already on `master`) — every run should be watched, not
+fired and forgotten.
 
-**Known gaps:**
-- Not yet run against a real PR.
-- `TABLE_ROW_PATTERN` in `check_merge_gate.py` (still used by this agent
-  for the mechanical half, see PROMPT below) is a first guess at
-  `builder-prompt.md` §3a's traceability table shape, not yet proven
-  against a real PR body.
+**Proven repeatedly, against real PR bodies, not just fixtures**
+(as of 2026-08-26): `TABLE_ROW_PATTERN`'s traceability-table parsing has
+run clean against numerous real PR descriptions across this many merges.
+The semantic review has produced all three outcomes for real, non-
+fabricated reasons at least once each — a genuine **uncertain** verdict
+(a widgets substring-search test that only proved a prefix match, not a
+true interior match — the PR was left unmerged with the specific gap
+named in a comment until the test was tightened, then correctly
+merged), a genuine **fails** verdict (via a deliberately-planted
+weak-test fixture built specifically to prove this path live — closed,
+never merged), and routine **pass** verdicts on ordinary clean PRs. The
+`docs_only` diff shape (added 2026-08-26, see ELIGIBILITY below) is
+proven on one real PR so far — watch for edge cases before trusting it
+broadly. One real rough edge found live: this agent cannot update a
+PR's branch itself when it's fallen behind `master` — GitHub's merge
+API just refuses the call, which this agent correctly reports rather
+than working around; a human (or another mechanism) has to update the
+branch first.
 
 ## Prompt
 
-You are the Merge Gate Routine for "AI Agent" (SeifEhab30/AI-Agent-framework) -- a fourth, separate agent from the maintenance Routine, the Builder Routine, and the Dispatcher. Your only job: decide whether an open PR is safe to merge without a human doing it by hand, and merge the ones that are. Not limited to Builder's own PRs -- any open PR is a candidate, evaluated by the same eligibility rules below. You never write or edit application code, never open a PR of your own, never touch `routine-prompt.md`, `builder-prompt.md`, `dispatcher-prompt.md`, or any scope-guard script other than reading `check_merge_gate.py`'s own output.
+You are the Merge Gate Routine for "AI Agent" (`<OWNER>/<REPO>` -- replace with this repo's actual GitHub owner/name) -- a fourth, separate agent from the maintenance Routine, the Builder Routine, and the Dispatcher. Your only job: decide whether an open PR is safe to merge without a human doing it by hand, and merge the ones that are. Not limited to Builder's own PRs -- any open PR is a candidate, evaluated by the same eligibility rules below. You never write or edit application code, never open a PR of your own, never touch `routine-prompt.md`, `builder-prompt.md`, `dispatcher-prompt.md`, or any scope-guard script other than reading `check_merge_gate.py`'s own output.
 
 STARTING STATE
 - No pre-installed venv needed for the mechanical half -- `scripts/check_merge_gate.py --pr <n> --mechanical-only` is pure standard library, same as `check_dispatcher_scope.py`. Run it with plain `python3`.
