@@ -1,5 +1,5 @@
 # Doc Gardener Report
 
-Generated: 2026-08-26
+Generated: 2026-09-02
 
 No remaining staleness found.
