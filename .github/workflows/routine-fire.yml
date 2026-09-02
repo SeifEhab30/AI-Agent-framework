@@ -38,21 +38,35 @@ jobs:
 
           echo "::notice::firing target=$TARGET"
 
+          # These three trigger IDs are fork-specific -- replace each with your
+          # own RemoteTrigger's ID (shown when you create it in the claude.ai
+          # Routines UI) before this workflow can fire anything. The original
+          # repo's IDs were removed here deliberately as part of a handoff --
+          # left in place, they'd just produce a 404/auth failure against
+          # triggers this fork's tokens (see the three *_FIRE_TOKEN secrets)
+          # don't have permission to fire anyway.
           case "$TARGET" in
             maintenance)
-              TRIGGER_ID="trig_011DbA7ZQiMSGW64Md3Yjaur"
+              TRIGGER_ID="<MAINTENANCE_TRIGGER_ID>"
               TOKEN="$MAINTENANCE_FIRE_TOKEN"
               ;;
             builder)
-              TRIGGER_ID="trig_01H6QZXRUi4S2zdY2X9R2ZPy"
+              TRIGGER_ID="<BUILDER_TRIGGER_ID>"
               TOKEN="$BUILDER_FIRE_TOKEN"
               ;;
             merge_gate)
-              TRIGGER_ID="trig_01EJfBr4rVxfonFknmBaCDn2"
+              TRIGGER_ID="<MERGE_GATE_TRIGGER_ID>"
               TOKEN="$MERGE_GATE_FIRE_TOKEN"
               ;;
             *)
               echo "::error::Unknown target '$TARGET' -- must be maintenance, builder, or merge_gate"
+              exit 1
+              ;;
+          esac
+
+          case "$TRIGGER_ID" in
+            \<*_TRIGGER_ID\>)
+              echo "::error::TRIGGER_ID for '$TARGET' is still the placeholder '$TRIGGER_ID' -- edit this workflow's case block and replace it with your own RemoteTrigger's ID"
               exit 1
               ;;
           esac

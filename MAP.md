@@ -3,6 +3,16 @@
 This file is an index, not documentation. If you need detail, follow a link
 below — do not expand this file with prose. Keep it short.
 
+## Picking this project up cold
+
+Read [TO_CONTINUE.md](TO_CONTINUE.md) first, not this file — it's the
+actual handoff doc (architecture, the four agent Routines' current
+state, open items, approaches already tried and abandoned). If you're
+continuing with an AI coding assistant, [memory.md](memory.md) has
+ready-to-paste briefing prompts for Claude Code, Codex, and Cursor.
+This file (`MAP.md`) is the terse index those two documents assume
+you'll come back to for quick lookups, not a substitute for either.
+
 ## How to work here
 
 - Read [docs/references/conventions.md](docs/references/conventions.md) before writing code.
@@ -27,7 +37,13 @@ below — do not expand this file with prose. Keep it short.
 - `docs/product-specs/` — what a domain/feature is supposed to do, from a user's perspective.
 - `docs/exec-plans/active/` — plans currently being executed.
 - `docs/exec-plans/completed/` — finished plans, kept for history.
-- `docs/references/` — conventions, style rules, and other lookup material.
+- `docs/references/` — conventions, style rules, and the four agent
+  Routines' source-of-truth prompts: `routine-prompt.md` (Maintenance),
+  `builder-prompt.md` (Builder), `dispatcher-prompt.md` (Dispatcher),
+  `merge-gate-prompt.md` (Merge Gate). Also
+  `routine-fire-loop.drawio` — a diagram of how these four interact
+  through the repo; open it in [draw.io](https://app.diagrams.net) or
+  the desktop app.
 - `docs/quality-score/` — output of doc-gardener and other automated health checks.
 
 ## Repo layout
@@ -83,4 +99,4 @@ See [docs/exec-plans/active/milestones.md](docs/exec-plans/active/milestones.md)
 for what's done and what's next.
 
 ---
-Last updated: 2026-08-12. Keep this file short — expand docs/, not this file.
+Last updated: 2026-09-02. Keep this file short — expand docs/, not this file.

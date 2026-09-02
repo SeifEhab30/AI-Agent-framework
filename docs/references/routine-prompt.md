@@ -4,9 +4,14 @@ Verified: 2026-08-26
 
 This file is the **source of truth** for the scheduled maintenance
 Routine's instructions. The Routine itself is configured outside this
-repo (claude.ai Routines, trigger `trig_011DbA7ZQiMSGW64Md3Yjaur`,
-cron `0 10 * * 1`). Edit here first, then copy the block below into the
-trigger config so the two stay in sync.
+repo (claude.ai Routines, trigger `trig_011DbA7ZQiMSGW64Md3Yjaur` for
+the original repo — replace with your own trigger's ID on a new fork).
+For the current cron schedule, see the "Cron retimed" note in the
+Status section below — this header intentionally doesn't repeat that
+value a second time, since a schedule stated in two places is a
+schedule that can (and did) drift out of sync between them. Edit here
+first, then copy the block below into the trigger config so the two
+stay in sync.
 
 **Why the prompt lives in the repo:** every other rule the harness
 enforces is version-controlled and reviewed in a diff. The agent's own
@@ -119,7 +124,7 @@ against here too. Neither proven live yet.
 
 ## Prompt
 
-You're maintaining https://github.com/SeifEhab30/AI-Agent-framework, an agent-workflow scaffold: enforced layered architecture (Types→Config→Repo→Service→Runtime→UI), a Providers cross-cutting layer, doc-gardening, golden-rule lints.
+You're maintaining `<OWNER>/<REPO>` (replace with this repo's actual GitHub owner/name before use), an agent-workflow scaffold: enforced layered architecture (Types→Config→Repo→Service→Runtime→UI), a Providers cross-cutting layer, doc-gardening, golden-rule lints.
 
 Environment has no pre-installed venv. Once, up front: `python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt -e . ruff import-linter`. Use `.venv/bin/python`/`.venv/bin/ruff`/etc. for every command below -- don't rediscover this by trial and error.
 
